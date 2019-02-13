@@ -126,8 +126,8 @@ def update(x, d, parameters, state, gradients, hyperparameters):
     if hyperparameters["use_backprop"]:
         gradients["conv"] = W[0].transpose(0, 1).mm(delta[0])
     else:
-        u   = W[0].transpose(0, 1).mm(b[0]*(1 - e[0]))
-        u_t = W[0].transpose(0, 1).mm(b_t[0]*(1 - e[0]))
+        u   = Y[0].mm(b[0]*(1 - e[0]))
+        u_t = Y[0].mm(b_t[0]*(1 - e[0]))
 
         gradients["conv"] = u - u_t
 
@@ -147,15 +147,15 @@ def update_weights(parameters, state, gradients, hyperparameters):
             parameters["Z"][i] += parameters["delta_Z"][i]
 
     if hyperparameters["symmetric_weights"]:
-        parameters["Y"]  = [ parameters["W"][i].transpose(0, 1).clone() for i in range(0, hyperparameters["num_hidden_layers"])+1 ]
+        parameters["Y"]  = [ parameters["W"][i].transpose(0, 1).clone() for i in range(0, hyperparameters["num_hidden_layers"]+1) ]
     elif hyperparameters["same_sign_weights"]:
         for i in range(0, hyperparameters["num_hidden_layers"]):
             mask = (torch.sign(parameters["Y"][i]) != torch.sign(parameters["W"][i].transpose(0, 1))).type(dtype_byte)
-            parameters["Y"][i][mask] = parameters["W"][i].transpose(0, 1)[mask]
+            parameters["Y"][i][mask] *= -1
 
     state["conv_layers_output"].backward(gradient=gradients["conv"])
     state["conv_layers_optimizer"].step()
-    
+
     return parameters
 
 def test(x, d, parameters, hyperparameters):
@@ -220,7 +220,7 @@ def initialize(hyperparameters):
         if hyperparameters["same_sign_weights"]:
             for i in range(0, hyperparameters["num_hidden_layers"]+1):
                 mask = (torch.sign(parameters["Y"][i]) != torch.sign(parameters["W"][i].transpose(0, 1))).type(dtype_byte)
-                parameters["Y"][i][mask] = parameters["W"][i].transpose(0, 1)[mask]
+                parameters["Y"][i][mask] *= -1
     
     state = {
         "e":                     [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
