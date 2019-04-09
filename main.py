@@ -13,7 +13,7 @@ parser.add_argument("-test_frequency", type=int, help="Frequency (ie. every ___ 
 parser.add_argument("-num_hidden_units", help="Number of units in each hidden layer.", type=lambda s: [int(item) for item in s.split(',')], default=[500, 500])
 parser.add_argument("-Z_range", help="Range of uniform distribution used for initial recurrent weights.", type=lambda s: [float(item) for item in s.split(',')], default=[0.01, 0.01])
 parser.add_argument("-Y_range", help="Range of uniform distribution used for initial feedback weights.", type=lambda s: [float(item) for item in s.split(',')], default=[1.0, 1.0])
-parser.add_argument("-forward_learning_rates", help="Feedforward learning rates.", type=lambda s: [float(item) for item in s.split(',')], default=[1.0, 1.0, 1.0])
+parser.add_argument("-forward_learning_rates", help="Feedforward learning rates.", type=lambda s: [float(item) for item in s.split(',')], default=[0.1, 0.1, 0.1])
 parser.add_argument("-recurrent_learning_rates", help="Recurrent learning rates.", type=lambda s: [float(item) for item in s.split(',')], default=[0.0001, 0.0001])
 parser.add_argument("-gamma", type=float, help="Output layer burst probability in the absence of a target.", default=0.2)
 parser.add_argument("-beta", type=float, help="Slope of the burst probability function.", default=1.0)
@@ -58,6 +58,8 @@ def initialize_network(hyperparameters):
 		import jordan.network as net
 	elif args.model == 'jordan_conv':
 		import jordan.conv_network as net
+	elif args.model == 'jordan_time':
+		import jordan.time_network as net
 
 	parameters, state, gradients = net.initialize(hyperparameters)
 

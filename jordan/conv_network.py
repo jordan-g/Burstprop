@@ -124,7 +124,7 @@ def update(x, d, parameters, state, gradients, hyperparameters):
                 gradients["Z"][i] = -u.mm(e[i].transpose(0, 1))
 
     if hyperparameters["use_backprop"]:
-        gradients["conv"] = W[0].transpose(0, 1).mm(delta[0])
+        gradients["conv"] = Y[0].mm(delta[0])
     else:
         u   = Y[0].mm(b[0]*(1 - e[0]))
         u_t = Y[0].mm(b_t[0]*(1 - e[0]))
@@ -171,8 +171,6 @@ def test(x, d, parameters, hyperparameters):
             e[i] = torch.sigmoid(W[i].mm(x) + bias[i])
         else:
             e[i] = torch.sigmoid(W[i].mm(e[i-1]) + bias[i])
-
-    # print(e[-1])
 
     test = 100.0*int(torch.sum(torch.ne(torch.max(e[-1], 0)[1], torch.max(d, 0)[1])))/x.shape[1]
 
