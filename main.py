@@ -22,8 +22,10 @@ parser.add_argument("-same_sign_weights", type=lambda x: (str(x).lower() == 'tru
 parser.add_argument("-use_recurrent_input", type=bool, help="Whether to use recurrent input at hidden layers.", default=True)
 parser.add_argument("-momentum", type=float, help="Momentum", default=0.8)
 parser.add_argument("-weight_decay", type=float, help="Weight decay", default=0.0)
+parser.add_argument("-heterosyn_plasticity", type=float, help="Heterosynaptic plasticity", default=0.)
 parser.add_argument("-use_validation", type=lambda x: (str(x).lower() == 'true'), help="Whether to use the validation set.", default=False)
 parser.add_argument("-use_backprop", default=False, type=lambda x: (str(x).lower() == 'true'))
+parser.add_argument("-p_0", type=float, help="Baseline probability for all layers", default=0.5)
 
 args = parser.parse_args()
 
@@ -49,7 +51,9 @@ hyperparameters = {
 	"momentum":                 args.momentum,
 	"weight_decay":             args.weight_decay,
 	"use_validation":           args.use_validation,
-	"use_backprop":             args.use_backprop
+	"use_backprop":             args.use_backprop,
+	"p_0":                      args.p_0,
+	"heterosyn_plasticity":		args.heterosyn_plasticity
 }
 
 def initialize_network(hyperparameters):
@@ -60,6 +64,8 @@ def initialize_network(hyperparameters):
 		import jordan.conv_network as net
 	elif args.model == 'jordan_time':
 		import jordan.time_network as net
+	elif args.model == 'expcrossent':
+		import expcrossent.network as net
 
 	parameters, state, gradients = net.initialize(hyperparameters)
 

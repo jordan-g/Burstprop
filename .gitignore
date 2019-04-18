@@ -1,0 +1,4 @@
+.DS_Store
+.idea/
+mnist/
+**/__pycache__
