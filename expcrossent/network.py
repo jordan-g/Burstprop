@@ -67,8 +67,15 @@ def update(x, d, parameters, state, gradients, hyperparameters):
     for i in range(hyperparameters["num_hidden_layers"]+1):
         if i == 0:
             e[i] = torch.exp(W[i].mm(x) + bias[i])
-        else:
+            print("layer {}: [{},{}]".format(i,torch.min(e[i]),torch.max(e[i])))
+        elif i < hyperparameters["num_hidden_layers"]:
             e[i] = torch.exp(W[i].mm(e[i-1]) + bias[i])
+            print("layer {}: [{},{}]".format(i,torch.min(e[i]),torch.max(e[i])))
+        else:
+            e[i] = torch.softmax(W[i].mm(e[i-1]) + bias[i], dim=0)
+            #print("shape of last: {}".format(torch.sum(e[i],dim=0)))
+            #print(torch.max(e[i]))
+
     train_error = 100.0*int(torch.sum(torch.ne(torch.max(e[-1], 0)[1], torch.max(d, 0)[1])))/x.shape[1]
 
     for i in range(hyperparameters["num_hidden_layers"], -1, -1):
@@ -84,10 +91,12 @@ def update(x, d, parameters, state, gradients, hyperparameters):
 
         else:
             if hyperparameters["use_backprop"]:
-                delta[i] = -W[i+1].transpose(0, 1).mm(delta[i+1])*e[i]
+                delta[i] = W[i+1].transpose(0, 1).mm(delta[i+1])*e[i]
             else:
                 du_i = Y[i].mm(delta[i+1])
+                #print("deltau in [{},{}]".format(torch.min(du_i), torch.max(du_i)))
                 p[i] = torch.sigmoid(alpha + hyperparameters["beta"] * du_i)
+                #print("p in [{},{}]".format(torch.min(p[i]), torch.max(p[i])))
                 delta[i] = (p[i] - p_0)*e[i]
             gradients["bias"][i] = torch.mean(delta[i], dim=1, keepdim=True)
 
@@ -100,10 +109,24 @@ def update(x, d, parameters, state, gradients, hyperparameters):
 
 def update_weights(parameters, state, gradients, hyperparameters):
     eta = hyperparameters["forward_learning_rates"]
+    mom = hyperparameters["momentum"]
     for i in range(hyperparameters["num_hidden_layers"]+1):
-        # note: the minus sign for standard backprop is included in gradients in function update
-        parameters["delta_W"][i] = eta[i]*gradients["W"][i] + hyperparameters["momentum"]*parameters["delta_W"][i]
-        parameters["delta_bias"][i] = eta[i]*gradients["bias"][i] + hyperparameters["momentum"]*parameters["delta_bias"][i]
+        if i==hyperparameters["num_hidden_layers"]:
+            parameters["momentum"][i] = mom*parameters["momentum"][i] + (1-mom)*(gradients["W"][i] - hyperparameters["weight_decay"] * parameters["W"][i])
+            parameters["delta_W"][i] = eta[i]*parameters["momentum"][i]
+            #parameters["delta_W"][i] = eta[i]*gradients["W"][i] + hyperparameters["momentum"]*parameters["delta_W"][i]
+        else:
+            parameters["momentum"][i] = mom * parameters["momentum"][i] + (1 - mom)*(gradients["W"][i] - hyperparameters["heterosyn_plasticity"]*torch.mean(state["e"][i], 1).unsqueeze(1)*parameters["W"][i] - hyperparameters["weight_decay"] * parameters["W"][i])
+            parameters["delta_W"][i] = eta[i] * parameters["momentum"][i]
+            # parameters["delta_W"][i] = eta[i]*gradients["W"][i] + hyperparameters["momentum"]*parameters["delta_W"][i]
+
+        parameters["momentum_bias"][i] = mom*parameters["momentum_bias"][i] + (1-mom)*gradients["bias"][i]
+        parameters["delta_bias"][i] = eta[i]*parameters["momentum_bias"][i]
+        #parameters["delta_bias"][i] = eta[i]*gradients["bias"][i] + hyperparameters["momentum"]*parameters["delta_bias"][i]
+
+        parameters["W"][i] += parameters["delta_W"][i]
+        parameters["bias"][i] += parameters["delta_bias"][i]
+        '''
         if i == hyperparameters["num_hidden_layers"]:
             parameters["W"][i]    += parameters["delta_W"][i] - hyperparameters["weight_decay"]*parameters["W"][i]
             parameters["bias"][i] += parameters["delta_bias"][i]
@@ -111,6 +134,7 @@ def update_weights(parameters, state, gradients, hyperparameters):
             parameters["W"][i] += parameters["delta_W"][i] - hyperparameters["weight_decay"] * parameters["W"][i] - \
                                   eta[i]*hyperparameters["heterosyn_plasticity"]*torch.mean(state["e"][i], 1).unsqueeze(1)*parameters["W"][i]
             parameters["bias"][i] += parameters["delta_bias"][i]
+        '''
     if hyperparameters["symmetric_weights"]:
         parameters["Y"]  = [ parameters["W"][i+1].transpose(0, 1).clone() for i in range(0, hyperparameters["num_hidden_layers"]) ]
     elif hyperparameters["same_sign_weights"]:
@@ -152,19 +176,27 @@ def initialize(hyperparameters):
 
     batch_size = hyperparameters["batch_size"]
 
-    W_range = [ 0.1*np.sqrt(6/(num_units[i-1] + num_units[i])) for i in range(1, num_layers) ]
+    W_range = [ np.sqrt(6/(num_units[i-1] + num_units[i])) for i in range(1, num_layers) ]
+    W_range[-1] = W_range[-1]
 
     parameters = {
         "W":          [ torch.from_numpy(np.random.uniform(-W_range[i-1], W_range[i-1], size=(num_units[i], num_units[i-1]))).type(dtype) for i in range(1, num_layers) ],
         "bias":       [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
         "delta_W":    [ torch.from_numpy(np.zeros((num_units[i], num_units[i-1]))).type(dtype) for i in range(1, num_layers) ],
         "delta_bias": [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
+        "momentum":   [ torch.from_numpy(np.zeros((num_units[i], num_units[i-1]))).type(dtype) for i in range(1, num_layers) ],
+        "momentum_bias": [torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers)]
     }
+
+    if not hyperparameters["symmetric_weights"]:
+        print('User-defined Y-range ignored for this model...')
+    Y_range = [np.sqrt(6./(num_units[i+1] + num_units[i+2])) for i in range(0, num_layers - 2)]
+    #Y_range[-1] = 10.*Y_range[-1]
 
     if hyperparameters["symmetric_weights"]:
         parameters["Y"] = [ parameters["W"][i+1].transpose(0, 1).clone() for i in range(0, num_layers-2) ]
     else:
-        parameters["Y"] = [ torch.from_numpy(np.random.uniform(-hyperparameters["Y_range"][i], hyperparameters["Y_range"][i], size=(num_units[i+1], num_units[i+2]))).type(dtype) for i in range(0, num_layers-2) ]
+        parameters["Y"] = [ torch.from_numpy(np.random.uniform(-Y_range[i], Y_range[i], size=(num_units[i+1], num_units[i+2]))).type(dtype) for i in range(0, num_layers-2) ]
 
         if hyperparameters["same_sign_weights"]:
             for i in range(0, hyperparameters["num_hidden_layers"]):
