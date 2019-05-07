@@ -55,69 +55,77 @@ def load_dataset(dataset, use_validation):
     return x_train, d_train, x_test, d_test
 
 def update(x, d, parameters, state, gradients, hyperparameters):
-    W     = parameters["W"]
-    Y     = parameters["Y"]
-    Z     = parameters["Z"]
-    bias  = parameters["bias"]
-    e     = state["e"]
-    p     = state["p"]
-    p_t   = state["p_t"]
-    b     = state["b"]
-    b_t   = state["b_t"]
-    delta = gradients["delta"]
+    W      = parameters["W"]
+    Y      = parameters["Y"]
+    Z      = parameters["Z"]
+    bias   = parameters["bias"]
+    e      = state["e"]
+    e_prev = state["e_prev"]
+    p      = state["p"]
+    p_prev = state["p_prev"]
+    b      = state["b"]
+    b_prev = state["b_prev"]
+    delta  = gradients["delta"]
 
-    for i in range(hyperparameters["num_hidden_layers"]+1):
-        if i == 0:
-            e[i] = torch.sigmoid(W[i].mm(x) + bias[i])
-        else:
-            e[i] = torch.sigmoid(W[i].mm(e[i-1]) + bias[i])
-
-    train_error = 100.0*int(torch.sum(torch.ne(torch.max(e[-1], 0)[1], torch.max(d, 0)[1])))/x.shape[1]
-
-    for i in range(hyperparameters["num_hidden_layers"], -1, -1):
-        if i == hyperparameters["num_hidden_layers"]:
-            p[i]   = hyperparameters["gamma"]*torch.ones(e[i].shape).type(dtype)
-            p_t[i] = hyperparameters["gamma"]*(d - e[i] + 1)
-
-            b[i]    = p[i]*e[i]
-            b_t[i]  = p_t[i]*e[i]
-
-            train_cost = torch.sum((p_t[i] - p[i])**2)/(2*hyperparameters["batch_size"])
-
-            delta[i]                = -hyperparameters["gamma"]*(b_t[i] - b[i])*(1 - e[i])
-            gradients["W"][i]       = delta[i].mm(e[i-1].transpose(0, 1))
-            gradients["bias"][i]    = torch.sum(delta[i], dim=1).unsqueeze(1)
-            gradients["bias_bp"][i] = torch.sum(delta[i], dim=1).unsqueeze(1)
-        else:
-            if hyperparameters["use_recurrent_input"]:
-                c = Z[i].mm(e[i])
+    for t in range(2*hyperparameters["num_hidden_layers"]+1):
+        for i in range(hyperparameters["num_hidden_layers"]+1):
+            if i == 0:
+                e[i] = torch.sigmoid(W[i].mm(x) + bias[i])
             else:
-                c = 0
+                e[i] = torch.sigmoid(W[i].mm(e_prev[i-1]) + bias[i])
 
-            u = Y[i].mm(b[i+1]*(1 - e[i+1])) - c
+        for i in range(hyperparameters["num_hidden_layers"], -1, -1):
+            if i == hyperparameters["num_hidden_layers"]:
+                if t == i+1:
+                    p[i] = hyperparameters["gamma"]*(d - e[i] + 1)
+                else:
+                    p[i] = hyperparameters["gamma"]*torch.ones(e[i].shape).type(dtype)
+                
+                b[i] = p[i]*e[i]
 
-            p[i]   = torch.sigmoid(hyperparameters["beta"]*u)
-            p_t[i] = torch.sigmoid(hyperparameters["beta"]*(Y[i].mm(b_t[i+1]*(1 - e[i+1])) - c))
+                if t == i+1:
+                    train_cost = torch.sum((p[i] - p_prev[i])**2)/(2*hyperparameters["batch_size"])
 
-            b[i]    = p[i]*e[i]
-            b_t[i]  = p_t[i]*e[i]
-
-            if hyperparameters["use_backprop"]:
-                delta[i] = W[i+1].transpose(0, 1).mm(delta[i+1])*e[i]*(1 - e[i])
-                gradients["bias_bp"][i] = torch.sum(delta[i], dim=1).unsqueeze(1)
+                    delta[i]                = -hyperparameters["gamma"]*(b[i] - b_prev[i])*(1 - e_prev[i])
+                    gradients["W"][i]       = delta[i].mm(e_prev[i-1].transpose(0, 1))
+                    gradients["bias"][i]    = torch.sum(delta[i], dim=1).unsqueeze(1)
+                    gradients["bias_bp"][i] = torch.sum(delta[i], dim=1).unsqueeze(1)
             else:
-                delta[i] = -hyperparameters["gamma"]*(b_t[i] - b[i])*(1 - e[i])
-                gradients["bias_bp"][i] = torch.sum(W[i+1].transpose(0, 1).mm(delta[i+1])*e[i]*(1 - e[i]), dim=1).unsqueeze(1)
+                if hyperparameters["use_recurrent_input"]:
+                    c = Z[i].mm(b_prev[i])
+                else:
+                    c = 0
 
-            if i > 0:
-                gradients["W"][i] = delta[i].mm(e[i-1].transpose(0, 1))
-            else:
-                gradients["W"][i] = delta[i].mm(x.transpose(0, 1))
+                u = Y[i].mm(b_prev[i+1]*(1 - e_prev[i+1])) - c
 
-            gradients["bias"][i] = torch.sum(delta[i], dim=1).unsqueeze(1)
+                p[i] = torch.sigmoid(hyperparameters["beta"]*u)
 
-            if hyperparameters["use_recurrent_input"]:
-                gradients["Z"][i] = -u.mm(e[i].transpose(0, 1))
+                b[i] = p[i]*e[i]
+
+                if t == i+1:
+                    if hyperparameters["use_backprop"]:
+                        delta[i] = W[i+1].transpose(0, 1).mm(delta[i+1])*e_prev[i]*(1 - e_prev[i])
+                        gradients["bias_bp"][i] = torch.sum(delta[i], dim=1).unsqueeze(1)
+                    else:
+                        delta[i] = -hyperparameters["gamma"]*(b[i] - b_prev[i])*(1 - e_prev[i])
+                        gradients["bias_bp"][i] = torch.sum(W[i+1].transpose(0, 1).mm(delta[i+1])*e_prev[i]*(1 - e_prev[i]), dim=1).unsqueeze(1)
+
+                    if i > 0:
+                        gradients["W"][i] = delta[i].mm(e_prev[i-1].transpose(0, 1))
+                    else:
+                        gradients["W"][i] = delta[i].mm(x.transpose(0, 1))
+
+                    gradients["bias"][i] = torch.sum(delta[i], dim=1).unsqueeze(1)
+
+                    if hyperparameters["use_recurrent_input"]:
+                        gradients["Z"][i] = -u.mm(b_prev[i].transpose(0, 1))
+
+            e_prev[i] = e[i].clone()
+            p_prev[i] = p[i].clone()
+            b_prev[i] = b[i].clone()
+
+        if t == hyperparameters["num_hidden_layers"]:
+            train_error = 100.0*int(torch.sum(torch.ne(torch.max(e[-1], 0)[1], torch.max(d, 0)[1])))/x.shape[1]
 
     return state, gradients, train_cost, train_error
 
@@ -195,11 +203,12 @@ def initialize(hyperparameters):
                 parameters["Y"][i][mask] *= 1
                 
     state = {
-        "e":   [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
-        "p":   [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
-        "p_t": [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
-        "b":   [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
-        "b_t": [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ]
+        "e":      [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
+        "e_prev": [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
+        "p":      [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
+        "p_prev": [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
+        "b":      [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ],
+        "b_prev": [ torch.from_numpy(np.zeros((num_units[i], 1))).type(dtype) for i in range(1, num_layers) ]
     }
 
     gradients = {
