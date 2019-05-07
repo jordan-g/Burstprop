@@ -3,7 +3,7 @@ import numpy as np
 
 # parse arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("-model", help='Model to use.', default='jordan')
+parser.add_argument("-model", help='Model to use.', default='sigmse')
 parser.add_argument("-data_directory", help='Directory in which to save data.')
 parser.add_argument("-dataset", type=str, help="Which dataset to train on ('mnist' or 'cifar10').", default="mnist")
 parser.add_argument("-num_epochs", type=int, help="Number of epochs.", default=10)
@@ -58,12 +58,12 @@ hyperparameters = {
 
 def initialize_network(hyperparameters):
 	global net
-	if args.model == 'jordan':
-		import jordan.network as net
-	elif args.model == 'jordan_conv':
-		import jordan.conv_network as net
-	elif args.model == 'jordan_time':
-		import jordan.time_network as net
+	if args.model == 'sigmse':
+		import sigmse.network as net
+	elif args.model == 'sigmse_conv':
+		import sigmse.conv_network as net
+	elif args.model == 'sigmse_time':
+		import sigmse.time_network as net
 	elif args.model == 'expcrossent':
 		import expcrossent.network as net
 
