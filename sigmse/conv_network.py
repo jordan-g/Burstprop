@@ -98,7 +98,7 @@ def update(x, d, parameters, state, gradients, hyperparameters):
             else:
                 c = 0
 
-            u = Y[i+1].mm(b[i+1]*(1 - e[i+1])) - c
+            u = Y[i+1].mm(b[i+1]*(1 - b[i+1])) - c
 
             p[i]   = torch.sigmoid(hyperparameters["beta"]*u)
             p_t[i] = torch.sigmoid(hyperparameters["beta"]*(Y[i+1].mm(b_t[i+1]*(1 - e[i+1])) - c))
@@ -126,8 +126,8 @@ def update(x, d, parameters, state, gradients, hyperparameters):
     if hyperparameters["use_backprop"]:
         gradients["conv"] = Y[0].mm(delta[0])
     else:
-        u   = Y[0].mm(b[0]*(1 - e[0]))
-        u_t = Y[0].mm(b_t[0]*(1 - e[0]))
+        u   = Y[0].mm(b[0]*(1 - b[0]))
+        u_t = Y[0].mm(b_t[0]*(1 - b[0]))
 
         gradients["conv"] = u - u_t
 

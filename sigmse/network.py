@@ -96,7 +96,7 @@ def update(x, d, parameters, state, gradients, hyperparameters):
             else:
                 c = 0
 
-            u = Y[i].mm(b[i+1]*(1 - e[i+1])) - c
+            u = Y[i].mm(b[i+1]*(1 - b[i+1])) - c
 
             p[i]   = torch.sigmoid(hyperparameters["beta"]*u)
             p_t[i] = torch.sigmoid(hyperparameters["beta"]*(Y[i].mm(b_t[i+1]*(1 - e[i+1])) - c))
