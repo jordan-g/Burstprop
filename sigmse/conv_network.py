@@ -49,7 +49,7 @@ def load_dataset(dataset, use_validation):
 
         x_train = torch.from_numpy(x_train.T).type(dtype)
         d_train = torch.from_numpy(d_train.T).type(dtype)
-        x_test  = torch.from_numpy(x_test_set.T).type(dtype)
+        x_test  = torch.from_numpy(x_test.T).type(dtype)
         d_test  = torch.from_numpy(d_test.T).type(dtype)
 
     return x_train, d_train, x_test, d_test
@@ -188,7 +188,7 @@ def initialize(hyperparameters):
         input_size  = 784
         output_size = 10
     elif hyperparameters["dataset"] == "cifar10":
-        input_size  = 1024
+        input_size  = 3072
         output_size = 10
 
     x          = torch.zeros((input_size, 1)).type(dtype)
