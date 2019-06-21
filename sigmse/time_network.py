@@ -107,7 +107,7 @@ def update(x, d, parameters, state, gradients, hyperparameters):
                         delta[i] = W[i+1].transpose(0, 1).mm(delta[i+1])*e_prev[i]*(1 - e_prev[i])
                         gradients["bias_bp"][i] = torch.sum(delta[i], dim=1).unsqueeze(1)
                     else:
-                        delta[i] = -hyperparameters["gamma"]*(b[i] - b_prev[i])*(1 - e_prev[i])
+                        delta[i] = -hyperparameters["gamma"]*(b[i] - b_prev[i])*(1 - b_prev[i])
                         gradients["bias_bp"][i] = torch.sum(W[i+1].transpose(0, 1).mm(delta[i+1])*e_prev[i]*(1 - e_prev[i]), dim=1).unsqueeze(1)
 
                     if i > 0:
