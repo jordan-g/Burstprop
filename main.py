@@ -18,7 +18,7 @@ parser.add_argument("-recurrent_learning_rates", help="Recurrent learning rates.
 parser.add_argument("-gamma", type=float, help="Output layer burst probability in the absence of a target.", default=0.2)
 parser.add_argument("-beta", type=float, help="Slope of the burst probability function.", default=1.0)
 parser.add_argument("-symmetric_weights", type=lambda x: (str(x).lower() == 'true'), help="Whether to use symmetric weights.", default=False)
-parser.add_argument("-same_sign_weights", type=lambda x: (str(x).lower() == 'true'), help="Whether to use feedback weights that are the same sign as feedforward weights.", default=True)
+parser.add_argument("-same_sign_weights", type=lambda x: (str(x).lower() == 'true'), help="Whether to use feedback weights that are the same sign as feedforward weights.", default=False)
 parser.add_argument("-use_recurrent_input", type=bool, help="Whether to use recurrent input at hidden layers.", default=True)
 parser.add_argument("-momentum", type=float, help="Momentum", default=0.8)
 parser.add_argument("-weight_decay", type=float, help="Weight decay", default=0.0)
@@ -76,7 +76,7 @@ def train(x_train, d_train, x_test, d_test, parameters, state, gradients, hyperp
 
 	train_cost  = np.zeros(hyperparameters["num_epochs"]*num_batches)
 	train_error = np.zeros(hyperparameters["num_epochs"]*num_batches)
-	test_error  = np.zeros(hyperparameters["num_epochs"]*num_batches+1)
+	test_error  = np.zeros(hyperparameters["num_epochs"]*num_batches//hyperparameters["test_frequency"]+1)
 
 	test_error[0] = net.test(x_test, d_test, parameters, hyperparameters)
 
@@ -98,9 +98,9 @@ def train(x_train, d_train, x_test, d_test, parameters, state, gradients, hyperp
 			parameters = net.update_weights(parameters, state, gradients, hyperparameters)
 
 			if (batch_num+1) % hyperparameters["test_frequency"] == 0:
-				test_error[total_batch_num+1] = net.test(x_test, d_test, parameters, hyperparameters)
+				test_error[(total_batch_num+1)//hyperparameters["test_frequency"]] = net.test(x_test, d_test, parameters, hyperparameters)
 
-				print("Epoch {}, batch {}/{}. {} error: {:.2f}%. Train cost: {}.".format(epoch_num+1, batch_num+1, num_batches, "Validation" if hyperparameters["use_validation"] else "Test", test_error[total_batch_num+1], np.mean(train_cost[total_batch_num+1-hyperparameters["test_frequency"]:total_batch_num+1])))
+				print("Epoch {}, batch {}/{}. {} error: {:.2f}%. Train cost: {}.".format(epoch_num+1, batch_num+1, num_batches, "Validation" if hyperparameters["use_validation"] else "Test", test_error[(total_batch_num+1)//hyperparameters["test_frequency"]], np.mean(train_cost[total_batch_num+1-hyperparameters["test_frequency"]:total_batch_num+1])))
 
 	return train_cost, train_error, test_error
 
