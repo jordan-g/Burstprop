@@ -76,6 +76,19 @@ def update(x, d, parameters, state, gradients, hyperparameters):
 
     train_error = 100.0*int(torch.sum(torch.ne(torch.max(e[-1], 0)[1], torch.max(d, 0)[1])))/x.shape[1]
 
+    # calculate burst rates to use as recurrent input
+    for i in range(hyperparameters["num_hidden_layers"], -1, -1):
+        if i == hyperparameters["num_hidden_layers"]:
+            p[i] = hyperparameters["gamma"]*torch.ones(e[i].shape).type(dtype)
+
+            b[i] = p[i]*e[i]
+        else:
+            u = Y[i].mm(b[i+1]*(1 - b[i+1]))
+            
+            p[i] = torch.sigmoid(hyperparameters["beta"]*u)
+
+            b[i] = p[i]*e[i]
+
     for i in range(hyperparameters["num_hidden_layers"], -1, -1):
         if i == hyperparameters["num_hidden_layers"]:
             p[i]   = hyperparameters["gamma"]*torch.ones(e[i].shape).type(dtype)
@@ -92,7 +105,7 @@ def update(x, d, parameters, state, gradients, hyperparameters):
             gradients["bias_bp"][i] = torch.sum(delta[i], dim=1).unsqueeze(1)
         else:
             if hyperparameters["use_recurrent_input"]:
-                c = Z[i].mm(e[i])
+                c = Z[i].mm(b[i])
             else:
                 c = 0
 
