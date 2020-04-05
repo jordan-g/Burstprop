@@ -1,3 +1,30 @@
+'''
+Main script for training a network on ImageNet using backprop, feedback alignment or burstprop as presented in
+
+"Payeur, A., Guerguiev, J., Zenke, F., Richards, B., & Naud, R. (2020).
+Burst-dependent synaptic plasticity can coordinate learning in hierarchical circuits. bioRxiv."
+
+This code was partially adapted from https://github.com/pytorch/examples/tree/master/imagenet.
+
+     Author: Jordan Guergiuev
+     E-mail: jordan.guerguiev@me.com
+       Date: April 5, 2020
+Institution: University of Toronto Scarborough
+
+Copyright (C) 2020 Jordan Guerguiev
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
 import torch
 import torchvision
 
@@ -21,7 +48,7 @@ parser.add_argument("-batch_size", type=int, help="Batch size", default=128)
 parser.add_argument('-validation', default=False, help="Whether to the validation set", type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument("-hidden_lr", help="Learning rate for hidden layers", type=float, default=0.01)
 parser.add_argument("-output_lr", help="Learning rate for output layer", type=float, default=0.01)
-parser.add_argument("-weight_fa_range", help="Range of initial feedback weights for hidden layers", type=float, default=0.01)
+parser.add_argument("-weight_fa_std", help="Standard deviation of initial feedback weights for hidden layers", type=float, default=0.01)
 parser.add_argument("-momentum", type=float, help="Momentum", default=0.9)
 parser.add_argument("-weight_decay", type=float, help="Weight decay", default=1e-4)
 parser.add_argument("-p_baseline", type=float, help="Output layer baseline burst probability", default=0.2)
@@ -41,7 +68,7 @@ batch_size             = args.batch_size
 validation             = args.validation
 hidden_lr              = args.hidden_lr
 output_lr              = args.output_lr
-weight_fa_range        = args.weight_fa_range
+weight_fa_std          = args.weight_fa_std
 momentum               = args.momentum
 weight_decay           = args.weight_decay
 p_baseline             = args.p_baseline
@@ -69,7 +96,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 if use_backprop:
     net = ImageNetConvNetBP(input_channels=3)
 else:
-    net = ImageNetConvNet(input_channels=3, p_baseline=p_baseline, weight_fa_range=weight_fa_range, weight_fa_learning=weight_fa_learning, kappa=kappa)
+    net = ImageNetConvNet(input_channels=3, p_baseline=p_baseline, weight_fa_std=weight_fa_std, weight_fa_learning=weight_fa_learning, kappa=kappa)
 
 net = torch.nn.DataParallel(net).cuda()
 
@@ -302,10 +329,10 @@ def test():
 
 if folder_prefix is not None:
     # generate a name for the folder where data will be stored
-    lr_string                     = " ".join([ str(i) for i in lr ])
-    weight_fa_range_string = "{}".format(weight_fa_range)
+    lr_string            = " ".join([ str(i) for i in lr ])
+    weight_fa_std_string = "{}".format(weight_fa_std)
 
-    folder = "{} - {} - {} - {} - {} - {} - {}".format(folder_prefix, lr_string, weight_fa_range_string, batch_size, momentum, weight_decay, p_baseline) + " - BP"*(use_backprop == True) + " - {}".format(info)*(info != "")
+    folder = "{} - {} - {} - {} - {} - {} - {}".format(folder_prefix, lr_string, weight_fa_std_string, batch_size, momentum, weight_decay, p_baseline) + " - BP"*(use_backprop == True) + " - {}".format(info)*(info != "")
 else:
     folder = None
 
@@ -321,7 +348,7 @@ if folder is not None:
         f.write("Batch size: {}\n".format(batch_size))
         f.write("Using validation set: {}\n".format(validation))
         f.write("Feedforward learning rates: {}\n".format(lr))
-        f.write("Feedback weight initialization range: {}\n".format(weight_fa_range))
+        f.write("Feedback weight initialization standard deviation: {}\n".format(weight_fa_std))
         f.write("Momentum: {}\n".format(momentum))
         f.write("Weight decay: {}\n".format(weight_decay))
         f.write("Output layer baseline burst probability: {}\n".format(p_baseline))

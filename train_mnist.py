@@ -1,3 +1,28 @@
+'''
+Main script for training a network on MNIST using backprop, feedback alignment, node pertubation or burstprop as presented in
+
+"Payeur, A., Guerguiev, J., Zenke, F., Richards, B., & Naud, R. (2020).
+Burst-dependent synaptic plasticity can coordinate learning in hierarchical circuits. bioRxiv."
+
+     Author: Jordan Guergiuev
+     E-mail: jordan.guerguiev@me.com
+       Date: April 5, 2020
+Institution: University of Toronto Scarborough
+
+Copyright (C) 2020 Jordan Guerguiev
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
 import torch
 import torchvision
 
@@ -20,14 +45,14 @@ parser.add_argument('-conv_net', default=False, help="Whether to use the convolu
 parser.add_argument("-n_hidden_layers", type=int, help="Number of hidden layers (in the fully-connected network)", default=3)
 parser.add_argument("-hidden_lr", help="Learning rate for hidden layers", type=float, default=0.1)
 parser.add_argument("-output_lr", help="Learning rate for output layer", type=float, default=0.01)
-parser.add_argument("-weight_fa_range", help="Range of initial feedback weights for hidden layers", type=float, default=1.0)
+parser.add_argument("-weight_fa_std", help="Range of initial feedback weights for hidden layers", type=float, default=1.0)
 parser.add_argument("-momentum", type=float, help="Momentum", default=0.9)
 parser.add_argument("-weight_decay", type=float, help="Weight decay", default=1e-5)
 parser.add_argument("-p_baseline", type=float, help="Output layer baseline burst probability", default=0.2)
 parser.add_argument('-use_backprop', default=False, help="Whether to train using backprop", type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument('-weight_fa_learning', default=False, help="Whether to update feedback weights", type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument('-recurrent_input', default=True, help="Whether to use recurrent input", type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument("-weight_r_range", help="Range of initial recurrent weights", type=float, default=0.01)
+parser.add_argument("-weight_r_std", help="Range of initial recurrent weights", type=float, default=0.01)
 parser.add_argument('-weight_r_learning', default=True, help="Whether to update recurrent weights", type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument("-recurrent_lr", help="Learning rate for recurrent weights", type=float, default=0.0001)
 parser.add_argument('-use_node_pertubation', default=False, help="Whether to use node pertubation", type=lambda x: (str(x).lower() == 'true'))
@@ -47,14 +72,14 @@ conv_net               = args.conv_net
 n_hidden_layers        = args.n_hidden_layers
 hidden_lr              = args.hidden_lr
 output_lr              = args.output_lr
-weight_fa_range        = args.weight_fa_range
+weight_fa_std          = args.weight_fa_std
 momentum               = args.momentum
 weight_decay           = args.weight_decay
 p_baseline             = args.p_baseline
 use_backprop           = args.use_backprop
 weight_fa_learning     = args.weight_fa_learning
 recurrent_input        = args.recurrent_input
-weight_r_range         = args.weight_r_range
+weight_r_std           = args.weight_r_std
 weight_r_learning      = args.weight_r_learning
 recurrent_lr           = args.recurrent_lr
 use_node_pertubation   = args.use_node_pertubation
@@ -115,9 +140,9 @@ elif use_backprop:
         net = MNISTNetBP(input_channels=1, n_hidden_layers=n_hidden_layers).to(device)
 else:
     if conv_net:
-        net = MNISTConvNet(input_channels=1, p_baseline=p_baseline, weight_fa_range=weight_fa_range, weight_r_range=weight_r_range, weight_fa_learning=weight_fa_learning, recurrent_input=recurrent_input, weight_r_learning=weight_r_learning, device=device).to(device)
+        net = MNISTConvNet(input_channels=1, p_baseline=p_baseline, weight_fa_std=weight_fa_std, weight_r_std=weight_r_std, weight_fa_learning=weight_fa_learning, recurrent_input=recurrent_input, weight_r_learning=weight_r_learning, device=device).to(device)
     else:
-        net = MNISTNet(input_channels=1, p_baseline=p_baseline, weight_fa_range=weight_fa_range, weight_r_range=weight_r_range, weight_fa_learning=weight_fa_learning, recurrent_input=recurrent_input, weight_r_learning=weight_r_learning, n_hidden_layers=n_hidden_layers, device=device).to(device)
+        net = MNISTNet(input_channels=1, p_baseline=p_baseline, weight_fa_std=weight_fa_std, weight_r_std=weight_r_std, weight_fa_learning=weight_fa_learning, recurrent_input=recurrent_input, weight_r_learning=weight_r_learning, n_hidden_layers=n_hidden_layers, device=device).to(device)
 
 if use_backprop:
     criterion = torch.nn.MSELoss()
@@ -238,10 +263,10 @@ def test():
 
 if folder_prefix is not None:
     # generate a name for the folder where data will be stored
-    lr_string                     = " ".join([ str(i) for i in lr ])
-    weight_fa_range_string = "{}".format(weight_fa_range)
+    lr_string            = " ".join([ str(i) for i in lr ])
+    weight_fa_std_string = "{}".format(weight_fa_std)
 
-    folder = "{} - {} - {} - {} - {} - {} - {}".format(folder_prefix, lr_string, weight_fa_range_string, batch_size, momentum, weight_decay, p_baseline) + " - BP"*(use_backprop == True) + " - {}".format(info)*(info != "")
+    folder = "{} - {} - {} - {} - {} - {} - {}".format(folder_prefix, lr_string, weight_fa_std_string, batch_size, momentum, weight_decay, p_baseline) + " - BP"*(use_backprop == True) + " - {}".format(info)*(info != "")
 else:
     folder = None
 
@@ -260,14 +285,14 @@ if folder is not None:
         if not conv_net:
             f.write("Number of hidden layers: {}\n".format(n_hidden_layers))
         f.write("Feedforward learning rates: {}\n".format(lr))
-        f.write("Feedback weight initialization range: {}\n".format(weight_fa_range))
+        f.write("Feedback weight initialization standard deviation: {}\n".format(weight_fa_std))
         f.write("Momentum: {}\n".format(momentum))
         f.write("Weight decay: {}\n".format(weight_decay))
         f.write("Output layer baseline burst probability: {}\n".format(p_baseline))
         f.write("Using backprop: {}\n".format(use_backprop))
         f.write("Feedback weight learning: {}\n".format(weight_fa_learning))
         f.write("Recurrent input: {}\n".format(recurrent_input))
-        f.write("Recurrent weight initialization range: {}\n".format(weight_r_range))
+        f.write("Recurrent weight initialization standard deviation: {}\n".format(weight_r_std))
         f.write("Recurrent weight learning: {}\n".format(weight_r_learning))
         f.write("Recurrent weight learning rate: {}\n".format(recurrent_lr))
         f.write("Using node pertubation: {}\n".format(use_node_pertubation))

@@ -6,20 +6,20 @@ import math
 from layers_imagenet import *
 
 class ImageNetConvNet(nn.Module):
-    def __init__(self, input_channels, p_baseline, weight_fa_range, weight_fa_learning, kappa):
+    def __init__(self, input_channels, p_baseline, weight_fa_std, weight_fa_learning, kappa):
         super(ImageNetConvNet, self).__init__()
 
-        self.weight_fa_range = weight_fa_range
+        self.weight_fa_std = weight_fa_std
 
-        self.conv1   = ConvLayer(input_channels, 48, 1, weight_fa_range, weight_fa_learning, kernel_size=9, stride=4)
-        self.conv2   = ConvLayer(48, 48, 1, weight_fa_range, weight_fa_learning, kernel_size=3, stride=2)
-        self.conv3   = ConvLayer(48, 96, 1, weight_fa_range, weight_fa_learning, kernel_size=5, stride=1)
-        self.conv4   = ConvLayer(96, 96, 1, weight_fa_range, weight_fa_learning, kernel_size=3, stride=2)
-        self.conv5   = ConvLayer(96, 192, 1, weight_fa_range, weight_fa_learning, kernel_size=3, stride=1)
-        self.conv6   = ConvLayer(192, 192, 1, weight_fa_range, weight_fa_learning, kernel_size=3, stride=2)
-        self.conv7   = ConvLayer(192, 384, kappa, weight_fa_range, weight_fa_learning, kernel_size=3, stride=1)
+        self.conv1   = ConvLayer(input_channels, 48, 1, weight_fa_std, weight_fa_learning, kernel_size=9, stride=4)
+        self.conv2   = ConvLayer(48, 48, 1, weight_fa_std, weight_fa_learning, kernel_size=3, stride=2)
+        self.conv3   = ConvLayer(48, 96, 1, weight_fa_std, weight_fa_learning, kernel_size=5, stride=1)
+        self.conv4   = ConvLayer(96, 96, 1, weight_fa_std, weight_fa_learning, kernel_size=3, stride=2)
+        self.conv5   = ConvLayer(96, 192, 1, weight_fa_std, weight_fa_learning, kernel_size=3, stride=1)
+        self.conv6   = ConvLayer(192, 192, 1, weight_fa_std, weight_fa_learning, kernel_size=3, stride=2)
+        self.conv7   = ConvLayer(192, 384, kappa, weight_fa_std, weight_fa_learning, kernel_size=3, stride=1)
         self.flatten = Flatten()
-        self.fc1     = OutputLayer(384, 1000, p_baseline, weight_fa_range, weight_fa_learning, kappa)
+        self.fc1     = OutputLayer(384, 1000, p_baseline, weight_fa_std, weight_fa_learning, kappa)
 
         self.conv_layers = [self.conv1, self.conv2, self.conv3, self.conv4, self.conv5, self.conv6, self.conv7]
         self.fc_layers   = [self.fc1]
@@ -57,18 +57,18 @@ class ImageNetConvNet(nn.Module):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
                 nn.init.constant_(m.bias, 0)
 
-                if self.weight_fa_range > 0:
-                    nn.init.uniform_(m.weight_fa, -self.weight_fa_range, self.weight_fa_range)
+                if self.weight_fa_std > 0:
+                    nn.init.normal_(m.weight_fa, 0, self.weight_fa_std)
                 else:
                     nn.init.kaiming_normal_(m.weight_fa, mode='fan_out', nonlinearity='relu')
             elif isinstance(m, OutputLayer):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
-                if self.weight_fa_range > 0:
-                    nn.init.uniform_(m.weight_fa, -self.weight_fa_range, self.weight_fa_range)
+                if self.weight_fa_std > 0:
+                    nn.init.normal_(m.weight_fa, 0, self.weight_fa_std)
                 else:
-                    nn.init.uniform_(m.weight_fa, 0, 0.01)
+                    nn.init.normal_(m.weight_fa, 0, 0.01)
 
 class ImageNetConvNetBP(nn.Module):
     def __init__(self, input_channels):
