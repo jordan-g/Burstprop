@@ -26,15 +26,24 @@ class CIFAR10ConvNet(nn.Module):
 
         self.feature_layers = []
 
-        self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, 32, device, kernel_size=5, stride=2))
-        self.feature_layers.append(Conv2dHiddenLayer(64, 128, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
-        self.feature_layers.append(Conv2dHiddenLayer(128, 256, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[1].out_size, device, kernel_size=3))
+        if self.weight_fa_learning:
+            self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, 32, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(64, 128, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(128, 256, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[1].out_size, device, kernel_size=3))
+        else:
+            self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, 32, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(64, 256, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(256, 256, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[1].out_size, device, kernel_size=3))
         self.feature_layers.append(Flatten())
 
         self.classification_layers = []
 
-        self.classification_layers.append(HiddenLayer(2304, 1024, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, device))
-        self.classification_layers.append(OutputLayer(1024, 10, p_baseline, weight_fa_learning, device))
+        if self.weight_fa_learning:
+            self.classification_layers.append(HiddenLayer(2304, 1024, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, device))
+            self.classification_layers.append(OutputLayer(1024, 10, p_baseline, weight_fa_learning, device))
+        else:
+            self.classification_layers.append(HiddenLayer(2304, 2501, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, device))
+            self.classification_layers.append(OutputLayer(2501, 10, p_baseline, weight_fa_learning, device))
 
         self.out = nn.Sequential(*(self.feature_layers + self.classification_layers))
 
