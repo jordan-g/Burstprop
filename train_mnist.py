@@ -333,6 +333,7 @@ for epoch in range(n_epochs):
 
         if not use_backprop and not use_node_pertubation:
             weight_angles = net.weight_angles()
+            delta_angles = net.delta_angles()
 
             for i in range(len(weight_angles)):
                 writer.add_scalar('weight_angle/{}'.format(i), weight_angles[i], epoch+1)
