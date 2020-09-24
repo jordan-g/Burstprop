@@ -9,7 +9,7 @@ class ImageNetConvNet(nn.Module):
     def __init__(self, input_channels, p_baseline, weight_fa_std, weight_fa_learning, kappa):
         super(ImageNetConvNet, self).__init__()
 
-        self.weight_fa_std = weight_fa_std
+        self.weight_fa_learning = weight_fa_learning
 
         if weight_fa_learning:
             self.conv1   = ConvLayer(input_channels, 48, 1, weight_fa_std, weight_fa_learning, kernel_size=9, stride=4)
@@ -28,13 +28,12 @@ class ImageNetConvNet(nn.Module):
             self.conv4   = ConvLayer(96, 192, 1, weight_fa_std, weight_fa_learning, kernel_size=3, stride=2)
             self.conv5   = ConvLayer(192, 192, 1, weight_fa_std, weight_fa_learning, kernel_size=3, stride=1)
             self.conv6   = ConvLayer(192, 384, 1, weight_fa_std, weight_fa_learning, kernel_size=3, stride=2)
-            self.conv7   = ConvLayer(384, 384, kappa, weight_fa_std, weight_fa_learning, kernel_size=3, stride=1)
+            self.conv7   = ConvLayer(384, 470, kappa, weight_fa_std, weight_fa_learning, kernel_size=3, stride=1)
             self.flatten = Flatten()
-            self.fc1     = HiddenLayer(384, 555, p_baseline, weight_fa_std, weight_fa_learning, kappa)
-            self.fc2     = OutputLayer(555, 1000, p_baseline, weight_fa_std, weight_fa_learning, kappa)
+            self.fc1     = OutputLayer(470, 1000, p_baseline, weight_fa_std, weight_fa_learning, kappa)
 
         self.conv_layers = [self.conv1, self.conv2, self.conv3, self.conv4, self.conv5, self.conv6, self.conv7]
-        self.fc_layers   = [self.fc1, self.fc2]
+        self.fc_layers   = [self.fc1]
 
         self._initialize_weights()
 
