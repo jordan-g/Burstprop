@@ -9,6 +9,7 @@ class ImageNetConvNet(nn.Module):
     def __init__(self, input_channels, p_baseline, weight_fa_std, weight_fa_learning, kappa):
         super(ImageNetConvNet, self).__init__()
 
+        self.weight_fa_std = weight_fa_std
         self.weight_fa_learning = weight_fa_learning
 
         if self.weight_fa_learning:

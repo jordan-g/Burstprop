@@ -27,13 +27,13 @@ class CIFAR10ConvNet(nn.Module):
         self.feature_layers = []
 
         if self.weight_fa_learning:
-            self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, 32, device, kernel_size=5, stride=2))
-            self.feature_layers.append(Conv2dHiddenLayer(64, 128, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
-            self.feature_layers.append(Conv2dHiddenLayer(128, 256, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[1].out_size, device, kernel_size=3))
+            self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, False, weight_r_learning, 32, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(64, 128, p_baseline, weight_fa_learning, False, weight_r_learning, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(128, 256, p_baseline, weight_fa_learning, False, weight_r_learning, self.feature_layers[1].out_size, device, kernel_size=3))
         else:
-            self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, 32, device, kernel_size=5, stride=2))
-            self.feature_layers.append(Conv2dHiddenLayer(64, 256, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
-            self.feature_layers.append(Conv2dHiddenLayer(256, 256, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[1].out_size, device, kernel_size=3))
+            self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, False, weight_r_learning, 32, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(64, 256, p_baseline, weight_fa_learning, False, weight_r_learning, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(256, 256, p_baseline, weight_fa_learning, False, weight_r_learning, self.feature_layers[1].out_size, device, kernel_size=3))
         self.feature_layers.append(Flatten())
 
         self.classification_layers = []
@@ -786,6 +786,6 @@ class MNISTConvNetBP(nn.Module):
 
     def _initialize_weights(self):
         for m in self.modules():
-            if isinstance(m, mm.Conv2d) or isinstance(m, nn.Linear):
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
                 nn.init.xavier_normal_(m.weight, gain=3.6)
                 nn.init.constant_(m.bias, 0)

@@ -47,7 +47,7 @@ parser.add_argument("-hidden_lr", help="Learning rate for hidden layers", type=f
 parser.add_argument("-output_lr", help="Learning rate for output layer", type=float, default=0.01)
 parser.add_argument("-weight_fa_std", help="Range of initial feedback weights for hidden layers", type=float, default=1.0)
 parser.add_argument("-momentum", type=float, help="Momentum", default=0.9)
-parser.add_argument("-weight_decay", type=float, help="Weight decay", default=1e-5)
+parser.add_argument("-weight_decay", type=float, help="Weight decay", default=1e-6)
 parser.add_argument("-p_baseline", type=float, help="Output layer baseline burst probability", default=0.2)
 parser.add_argument('-use_backprop', default=False, help="Whether to train using backprop", type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument('-weight_fa_learning', default=False, help="Whether to update feedback weights", type=lambda x: (str(x).lower() == 'true'))

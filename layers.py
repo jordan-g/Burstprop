@@ -218,8 +218,6 @@ class _ConvNdFA(nn.Module):
 
         self.out_size = int((in_size - kernel_size[0] + 2*padding[0])/stride[0] + 1)
 
-        print(in_size, self.out_size)
-
         if self.recurrent_input:
             self.weight_r = torch.Tensor(self.out_size*self.out_size*self.out_channels, self.out_size*self.out_size*self.out_channels).to(device)
         if bias:

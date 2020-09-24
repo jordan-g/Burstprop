@@ -115,7 +115,7 @@ transform_test = torchvision.transforms.Compose([
 train_set = torchvision.datasets.CIFAR10(root='../Data', train=True, download=True, transform=transform_train)
 
 if validation:
-    train_set, test_set = torch.utils.data.random_split(train_set, [50000, 10000])
+    train_set, test_set = torch.utils.data.random_split(train_set, [40000, 10000])
 else:
     test_set = torchvision.datasets.CIFAR10(root='../Data', train=False, download=True, transform=transform_test)
 

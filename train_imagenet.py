@@ -370,12 +370,12 @@ if folder is not None:
     # initialize a Tensorboard writer
     writer = SummaryWriter(log_dir=folder)
 
-test_acc1, test_acc5, test_loss = test()
+# test_acc1, test_acc5, test_loss = test()
 
-if folder is not None:
-    writer.add_scalar('Test Top-1 Accuracy', test_acc1, 0)
-    writer.add_scalar('Test Top-5 Accuracy', test_acc5, 0)
-    writer.add_scalar('Test Loss', test_loss, 0)
+# if folder is not None:
+#     writer.add_scalar('Test Top-1 Accuracy', test_acc1, 0)
+#     writer.add_scalar('Test Top-5 Accuracy', test_acc5, 0)
+#     writer.add_scalar('Test Loss', test_loss, 0)
 
 starting_lrs = [ param_group['lr'] for param_group in optimizer.param_groups ]
 
