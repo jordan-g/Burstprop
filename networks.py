@@ -42,8 +42,8 @@ class CIFAR10ConvNet(nn.Module):
             self.classification_layers.append(HiddenLayer(2304, 1024, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, device))
             self.classification_layers.append(OutputLayer(1024, 10, p_baseline, weight_fa_learning, device))
         else:
-            self.classification_layers.append(HiddenLayer(2304, 2501, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, device))
-            self.classification_layers.append(OutputLayer(2501, 10, p_baseline, weight_fa_learning, device))
+            self.classification_layers.append(HiddenLayer(2304, 1480, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, device))
+            self.classification_layers.append(OutputLayer(1480, 10, p_baseline, weight_fa_learning, device))
 
         self.out = nn.Sequential(*(self.feature_layers + self.classification_layers))
 
