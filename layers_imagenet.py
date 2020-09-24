@@ -39,8 +39,6 @@ class OutputNeuron(torch.autograd.Function):
 
         a = F.softmax(e, dim=1)
 
-        kappa = 1e-5
-
         b = p_baseline*(torch.ones_like(a))*a
         b_t = torch.min(p_baseline*(kappa*(target - a)/(a + 1e-8) + 1), torch.ones_like(a))*a
 
@@ -126,7 +124,7 @@ class HiddenNeuron(torch.autograd.Function):
         else:
             grad_weight_fa = None
 
-        return grad_input, grad_input_t, grad_weight, grad_weight_fa, grad_bias, None, None,
+        return grad_input, grad_input_t, grad_weight, grad_weight_fa, grad_bias, None, None
 
 class HiddenLayer(nn.Module):
     def __init__(self, in_features, out_features, p_baseline, weight_fa_gain, weight_fa_learning, kappa):
@@ -144,7 +142,7 @@ class HiddenLayer(nn.Module):
         self.weight_fa = nn.Parameter(torch.Tensor(out_features, in_features), requires_grad=weight_fa_learning)
 
     def forward(self, input):
-        return HiddenNeuron.apply(input[0], input[1], self.weight, self.weight_fa, self.bias, self.p_baseline, self.weight_fa_learning, self.kappa)
+        return HiddenNeuron.apply(input[0], input[1], self.weight, self.weight_fa, self.bias, self.weight_fa_learning, self.kappa)
 
 class ConvNeuron(torch.autograd.Function):
     @staticmethod

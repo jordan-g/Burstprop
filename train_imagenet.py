@@ -43,7 +43,7 @@ from networks_imagenet import *
 parser = argparse.ArgumentParser()
 parser.add_argument('folder_prefix', help='Prefix of folder name where data will be saved')
 parser.add_argument('data_path', help='Path to the dataset', type=str)
-parser.add_argument("-n_epochs", type=int, help="Number of epochs", default=500)
+parser.add_argument("-n_epochs", type=int, help="Number of epochs", default=50)
 parser.add_argument("-batch_size", type=int, help="Batch size", default=128)
 parser.add_argument('-validation', default=False, help="Whether to the validation set", type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument("-hidden_lr", help="Learning rate for hidden layers", type=float, default=0.01)
@@ -396,8 +396,8 @@ for epoch in range(start_epoch, n_epochs):
         writer.add_scalar('Test Loss', test_loss, epoch+1)
 
     # remember best acc@1 and save checkpoint
-    is_best = acc1 > best_acc1
-    best_acc1 = max(acc1, best_acc1)
+    is_best = test_acc1 > best_acc1
+    best_acc1 = max(test_acc1, best_acc1)
 
     save_checkpoint({
             'epoch': epoch + 1,
