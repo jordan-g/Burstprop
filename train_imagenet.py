@@ -61,7 +61,7 @@ parser.add_argument("-info", type=str, help="Any other information about the sim
 
 args=parser.parse_args()
 
-directory          = args.directory
+directory              = args.directory
 data_path              = args.data_path
 n_epochs               = args.n_epochs
 batch_size             = args.batch_size
@@ -161,12 +161,12 @@ transform_test = torchvision.transforms.Compose([
     torchvision.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-train_set = torchvision.datasets.ImageFolder(train_dir, transform=transform_train)
+train_set = torchvision.datasets.Imagedirectory(train_dir, transform=transform_train)
 
 if validation:
     train_set, test_set = torch.utils.data.random_split(train_set, [1231167, 50000])
 else:
-    test_set  = torchvision.datasets.ImageFolder(test_dir, transform=transform_test)
+    test_set  = torchvision.datasets.Imagedirectory(test_dir, transform=transform_test)
 
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
