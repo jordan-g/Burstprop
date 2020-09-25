@@ -41,7 +41,7 @@ from tensorboardX import SummaryWriter
 from networks_imagenet import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('folder_prefix', help='Prefix of folder name where data will be saved')
+parser.add_argument('directory', help='Path to directory where data will be saved')
 parser.add_argument('data_path', help='Path to the dataset', type=str)
 parser.add_argument("-n_epochs", type=int, help="Number of epochs", default=50)
 parser.add_argument("-batch_size", type=int, help="Batch size", default=128)
@@ -61,7 +61,7 @@ parser.add_argument("-info", type=str, help="Any other information about the sim
 
 args=parser.parse_args()
 
-folder_prefix          = args.folder_prefix
+directory          = args.directory
 data_path              = args.data_path
 n_epochs               = args.n_epochs
 batch_size             = args.batch_size
@@ -171,10 +171,10 @@ else:
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
-def save_checkpoint(state, is_best, folder, filename='checkpoint.pth.tar'):
-    torch.save(state, os.path.join(folder, filename))
+def save_checkpoint(state, is_best, directory, filename='checkpoint.pth.tar'):
+    torch.save(state, os.path.join(directory, filename))
     if is_best:
-        shutil.copyfile(os.path.join(folder, filename), os.path.join(folder, 'best_model.pth.tar'))
+        shutil.copyfile(os.path.join(directory, filename), os.path.join(directory, 'best_model.pth.tar'))
 
 def adjust_learning_rate(optimizer, starting_lrs, epoch):
     # set the learning rate to the initial learning rate decayed by 10 every 30 epochs
@@ -327,22 +327,13 @@ def test():
 
     return top1.avg, top5.avg, losses.avg
 
-if folder_prefix is not None:
-    # generate a name for the folder where data will be stored
-    lr_string            = " ".join([ str(i) for i in lr ])
-    weight_fa_std_string = "{}".format(weight_fa_std)
-
-    folder = "{} - {} - {} - {} - {} - {} - {}".format(folder_prefix, lr_string, weight_fa_std_string, batch_size, momentum, weight_decay, p_baseline) + " - BP"*(use_backprop == True) + " - {}".format(info)*(info != "")
-else:
-    folder = None
-
-if folder is not None:
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+if directory is not None:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     # save a human-readable text file containing simulation details
     timestamp = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
-    with open(os.path.join(folder, "params.txt"), "w") as f:
+    with open(os.path.join(directory, "params.txt"), "w") as f:
         f.write("Simulation run @ {}\n".format(timestamp))
         f.write("Number of epochs: {}\n".format(n_epochs))
         f.write("Batch size: {}\n".format(batch_size))
@@ -363,19 +354,19 @@ if folder is not None:
     filename = os.path.basename(__file__)
     if filename.endswith('pyc'):
         filename = filename[:-1]
-    shutil.copyfile(filename, os.path.join(folder, filename))
-    shutil.copyfile("networks_imagenet.py", os.path.join(folder, "networks_imagenet.py"))
-    shutil.copyfile("layers_imagenet.py", os.path.join(folder, "layers_imagenet.py"))
+    shutil.copyfile(filename, os.path.join(directory, filename))
+    shutil.copyfile("networks_imagenet.py", os.path.join(directory, "networks_imagenet.py"))
+    shutil.copyfile("layers_imagenet.py", os.path.join(directory, "layers_imagenet.py"))
 
     # initialize a Tensorboard writer
-    writer = SummaryWriter(log_dir=folder)
+    writer = SummaryWriter(log_dir=directory)
 
-# test_acc1, test_acc5, test_loss = test()
+test_acc1, test_acc5, test_loss = test()
 
-# if folder is not None:
-#     writer.add_scalar('Test Top-1 Accuracy', test_acc1, 0)
-#     writer.add_scalar('Test Top-5 Accuracy', test_acc5, 0)
-#     writer.add_scalar('Test Loss', test_loss, 0)
+if directory is not None:
+    writer.add_scalar('Test Top-1 Accuracy', test_acc1, 0)
+    writer.add_scalar('Test Top-5 Accuracy', test_acc5, 0)
+    writer.add_scalar('Test Loss', test_loss, 0)
 
 starting_lrs = [ param_group['lr'] for param_group in optimizer.param_groups ]
 
@@ -387,7 +378,7 @@ for epoch in range(start_epoch, n_epochs):
     train_acc1, train_acc5, train_loss = train(epoch)
     test_acc1, test_acc5, test_loss = test()
 
-    if folder is not None:
+    if directory is not None:
         writer.add_scalar('Train Top-1 Accuracy', train_acc1, epoch+1)
         writer.add_scalar('Train Top-5 Accuracy', train_acc5, epoch+1)
         writer.add_scalar('Train Loss', train_loss, epoch+1)
@@ -404,4 +395,4 @@ for epoch in range(start_epoch, n_epochs):
             'state_dict': net.state_dict(),
             'best_acc1': best_acc1,
             'optimizer' : optimizer.state_dict()},
-            is_best, folder)
+            is_best, directory)
