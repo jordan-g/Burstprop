@@ -23,7 +23,7 @@ All of the required libraries can be installed using **pip** in the command line
 pip install torch torchvision numpy tqdm tensorboardx
 ```
 
-When running the scripts to train on MNIST or CIFAR-10 for the first time, the datasets will be downloaded automatically by the torchvision library. For training on ImageNet, the dataset must be downloaded by the user (http://www.image-net.org/challenges/LSVRC/2012/), and the path to the dataset must be supplied as a command line argument.
+When running the scripts to train on MNIST or CIFAR-10 for the first time, these datasets will be downloaded automatically by the torchvision library. For training on ImageNet, the dataset must be downloaded by the user (http://www.image-net.org/challenges/LSVRC/2012/), and the path to the dataset must be supplied as a command line argument. Note that downloading ImageNet can take many hours, due to the large size of the dataset.
 
 ## Instructions
 There are three main scripts to run:
