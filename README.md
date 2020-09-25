@@ -48,4 +48,4 @@ python3 train_cifar10.py --help
 ```
 
 ## Demo
-The Jupyter notebook `mnist_demo.ipynb` contains a simple demo for training on MNIST using learned feedback weights. To run the notebook, Jupyter must be installed (https://jupyter.org/install). The notebook should take a few minutes to run on a laptop.
+The Jupyter notebook `mnist_demo.ipynb` contains a simple demo for training on MNIST using learned feedback weights and observing weight alignment. To run the notebook, Jupyter must be installed (https://jupyter.org/install). The notebook should take around 10 minutes to run on a laptop.
