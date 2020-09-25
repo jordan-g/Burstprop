@@ -328,8 +328,6 @@ for epoch in range(n_epochs):
             weight_angles = net.weight_angles()
             delta_angles = net.delta_angles()
 
-            print(weight_angles)
-
             for i in range(len(weight_angles)):
                 writer.add_scalar('weight_angle/{}'.format(i), weight_angles[i], epoch+1)
                 writer.add_scalar('delta_angle/{}'.format(i), delta_angles[i], epoch+1)
