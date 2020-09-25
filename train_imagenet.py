@@ -361,6 +361,8 @@ if directory is not None:
     # initialize a Tensorboard writer
     writer = SummaryWriter(log_dir=directory)
 
+    torch.save(net, os.path.join(directory, "initial_model.pth"))
+
 test_acc1, test_acc5, test_loss = test()
 
 if directory is not None:
@@ -385,6 +387,8 @@ for epoch in range(start_epoch, n_epochs):
         writer.add_scalar('Test Top-1 Accuracy', test_acc1, epoch+1)
         writer.add_scalar('Test Top-5 Accuracy', test_acc5, epoch+1)
         writer.add_scalar('Test Loss', test_loss, epoch+1)
+
+        torch.save(net, os.path.join(directory, "model.pth"))
 
     # remember best acc@1 and save checkpoint
     is_best = test_acc1 > best_acc1

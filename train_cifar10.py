@@ -283,6 +283,8 @@ if directory is not None:
     # initialize a Tensorboard writer
     writer = SummaryWriter(log_dir=directory)
 
+    torch.save(net, os.path.join(directory, "initial_model.pth"))
+
 if directory is not None:
     test_error, test_loss = test()
 
@@ -308,3 +310,5 @@ for epoch in range(n_epochs):
             for i in range(len(weight_angles)):
                 writer.add_scalar('weight_angle/{}'.format(i), weight_angles[i], epoch+1)
                 writer.add_scalar('delta_angle/{}'.format(i), delta_angles[i], epoch+1)
+
+        torch.save(net, os.path.join(directory, "model.pth"))
