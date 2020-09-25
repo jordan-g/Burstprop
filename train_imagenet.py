@@ -41,7 +41,7 @@ from tensorboardX import SummaryWriter
 from networks_imagenet import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('directory', help='Prefix of directory name where data will be saved')
+parser.add_argument('directory', help='Path to directory where data will be saved')
 parser.add_argument('data_path', help='Path to the dataset', type=str)
 parser.add_argument("-n_epochs", type=int, help="Number of epochs", default=50)
 parser.add_argument("-batch_size", type=int, help="Batch size", default=128)

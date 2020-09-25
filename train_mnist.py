@@ -37,7 +37,7 @@ from tensorboardX import SummaryWriter
 from networks import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('folder_prefix', help='Prefix of folder name where data will be saved')
+parser.add_argument('directory', help='Path to directory where data will be saved')
 parser.add_argument("-n_epochs", type=int, help="Number of epochs", default=500)
 parser.add_argument("-batch_size", type=int, help="Batch size", default=32)
 parser.add_argument('-validation', default=False, help="Whether to the validation set", type=lambda x: (str(x).lower() == 'true'))
@@ -46,7 +46,7 @@ parser.add_argument("-n_hidden_layers", type=int, help="Number of hidden layers 
 parser.add_argument("-hidden_lr", help="Learning rate for hidden layers", type=float, default=0.1)
 parser.add_argument("-output_lr", help="Learning rate for output layer", type=float, default=0.01)
 parser.add_argument("-weight_fa_std", help="Range of initial feedback weights for hidden layers", type=float, default=1.0)
-parser.add_argument("-momentum", type=float, help="Momentum", default=0.9)
+parser.add_argument("-momentum", type=float, help="Momentum", default=0.8)
 parser.add_argument("-weight_decay", type=float, help="Weight decay", default=1e-6)
 parser.add_argument("-p_baseline", type=float, help="Output layer baseline burst probability", default=0.2)
 parser.add_argument('-use_backprop', default=False, help="Whether to train using backprop", type=lambda x: (str(x).lower() == 'true'))
@@ -64,7 +64,7 @@ parser.add_argument("-info", type=str, help="Any other information about the sim
 
 args=parser.parse_args()
 
-folder_prefix          = args.folder_prefix
+directory              = args.directory
 n_epochs               = args.n_epochs
 batch_size             = args.batch_size
 validation             = args.validation
@@ -118,12 +118,12 @@ transform_test = torchvision.transforms.Compose([
     torchvision.transforms.ToTensor()
 ])
 
-train_set = torchvision.datasets.MNIST(root='../Data', train=True, download=True, transform=transform_train)
+train_set = torchvision.datasets.MNIST(root='./Data', train=True, download=True, transform=transform_train)
 
 if validation:
     train_set, test_set = torch.utils.data.random_split(train_set, [50000, 10000])
 else:
-    test_set = torchvision.datasets.MNIST(root='../Data', train=False, download=True, transform=transform_test)
+    test_set = torchvision.datasets.MNIST(root='./Data', train=False, download=True, transform=transform_test)
 
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2)
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=100, shuffle=False, num_workers=2)
@@ -261,22 +261,13 @@ def test():
 
     return 100*(1 - correct/total), test_loss/(batch_idx+1)
 
-if folder_prefix is not None:
-    # generate a name for the folder where data will be stored
-    lr_string            = " ".join([ str(i) for i in lr ])
-    weight_fa_std_string = "{}".format(weight_fa_std)
-
-    folder = "{} - {} - {} - {} - {} - {} - {}".format(folder_prefix, lr_string, weight_fa_std_string, batch_size, momentum, weight_decay, p_baseline) + " - BP"*(use_backprop == True) + " - {}".format(info)*(info != "")
-else:
-    folder = None
-
-if folder is not None:
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+if directory is not None:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     # save a human-readable text file containing simulation details
     timestamp = datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y")
-    with open(os.path.join(folder, "params.txt"), "w") as f:
+    with open(os.path.join(directory, "params.txt"), "w") as f:
         f.write("Simulation run @ {}\n".format(timestamp))
         f.write("Number of epochs: {}\n".format(n_epochs))
         f.write("Batch size: {}\n".format(batch_size))
@@ -306,14 +297,16 @@ if folder is not None:
     filename = os.path.basename(__file__)
     if filename.endswith('pyc'):
         filename = filename[:-1]
-    shutil.copyfile(filename, os.path.join(folder, filename))
-    shutil.copyfile("networks.py", os.path.join(folder, "networks.py"))
-    shutil.copyfile("layers.py", os.path.join(folder, "layers.py"))
+    shutil.copyfile(filename, os.path.join(directory, filename))
+    shutil.copyfile("networks.py", os.path.join(directory, "networks.py"))
+    shutil.copyfile("layers.py", os.path.join(directory, "layers.py"))
 
     # initialize a Tensorboard writer
-    writer = SummaryWriter(log_dir=folder)
+    writer = SummaryWriter(log_dir=directory)
 
-if folder is not None:
+    torch.save(net, os.path.join(directory, "initial_model.pth"))
+
+if directory is not None:
     test_error, test_loss = test()
 
     writer.add_scalar('Test Error', test_error, 0)
@@ -325,7 +318,7 @@ for epoch in range(n_epochs):
     train_error, train_loss, delta_angles = train(epoch)
     test_error, test_loss   = test()
 
-    if folder is not None:
+    if directory is not None:
         writer.add_scalar('Train Error', train_error, epoch+1)
         writer.add_scalar('Train Loss', train_loss, epoch+1)
         writer.add_scalar('Test Error', test_error, epoch+1)
@@ -335,6 +328,10 @@ for epoch in range(n_epochs):
             weight_angles = net.weight_angles()
             delta_angles = net.delta_angles()
 
+            print(weight_angles)
+
             for i in range(len(weight_angles)):
                 writer.add_scalar('weight_angle/{}'.format(i), weight_angles[i], epoch+1)
                 writer.add_scalar('delta_angle/{}'.format(i), delta_angles[i], epoch+1)
+
+    torch.save(net, os.path.join(directory, "model.pth"))
