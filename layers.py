@@ -321,17 +321,15 @@ class Conv2dHiddenLayer(_ConvNdFA):
         else:
             self.grad_weight = nn.grad.conv2d_weight(self.input, self.weight.shape, self.delta, self.stride, self.padding, self.dilation, self.groups)
         
-        self.grad_bias = torch.sum(self.delta_bp, dim=[0, 2, 3])
+        self.grad_bias = torch.sum(self.delta, dim=[0, 2, 3])
 
-        if self.recurrent_input and self.weight_fa_learning:
-            delta = -(self.b_t - self.b)
-
+        if self.weight_fa_learning:
             if use_cudnn:
-                self.grad_weight_fa = cudnn_convolution.convolution_backward_weight(self.input, self.weight_fa.shape, delta, self.stride, self.padding, self.dilation, self.groups, False, False)
+                self.grad_weight_fa = cudnn_convolution.convolution_backward_weight(self.input, self.weight_fa.shape, self.delta, self.stride, self.padding, self.dilation, self.groups, False, False)
             else:
-                self.grad_weight_fa = nn.grad.conv2d_weight(self.input, self.weight_fa.shape, delta, self.stride, self.padding, self.dilation, self.groups)
+                self.grad_weight_fa = nn.grad.conv2d_weight(self.input, self.weight_fa.shape, self.delta, self.stride, self.padding, self.dilation, self.groups)
         
-        if self.weight_r_learning:
+        if self.recurrent_input and self.weight_r_learning:
             self.grad_weight_r = -u.view(-1, self.out_size*self.out_size*self.out_channels).transpose(0, 1).mm(self.b_pre.view(-1, self.out_size*self.out_size*self.out_channels))
 
         if use_cudnn:

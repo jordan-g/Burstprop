@@ -15,11 +15,11 @@ class Flatten(nn.Module):
         return b_input.view(self.input_size), b_input_t.view(self.input_size), b_input_bp.view(self.input_size)
 
 class CIFAR10ConvNet(nn.Module):
-    def __init__(self, input_channels, p_baseline, weight_fa_std, weight_r_std, weight_fa_learning, recurrent_input, weight_r_learning, device):
+    def __init__(self, input_channels, p_baseline, weight_fa_std, weight_r_range, weight_fa_learning, recurrent_input, weight_r_learning, device):
         super(CIFAR10ConvNet, self).__init__()
 
         self.weight_fa_std      = weight_fa_std
-        self.weight_r_std       = weight_r_std
+        self.weight_r_range     = weight_r_range
         self.weight_fa_learning = weight_fa_learning
         self.recurrent_input    = recurrent_input
         self.weight_r_learning  = weight_r_learning
@@ -27,13 +27,13 @@ class CIFAR10ConvNet(nn.Module):
         self.feature_layers = []
 
         if self.weight_fa_learning:
-            self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, False, weight_r_learning, 32, device, kernel_size=5, stride=2))
-            self.feature_layers.append(Conv2dHiddenLayer(64, 128, p_baseline, weight_fa_learning, False, weight_r_learning, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
-            self.feature_layers.append(Conv2dHiddenLayer(128, 256, p_baseline, weight_fa_learning, False, weight_r_learning, self.feature_layers[1].out_size, device, kernel_size=3))
+            self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, False, False, 32, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(64, 128, p_baseline, weight_fa_learning, False, False, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(128, 256, p_baseline, weight_fa_learning, False, False, self.feature_layers[1].out_size, device, kernel_size=3))
         else:
-            self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, False, weight_r_learning, 32, device, kernel_size=5, stride=2))
-            self.feature_layers.append(Conv2dHiddenLayer(64, 256, p_baseline, weight_fa_learning, False, weight_r_learning, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
-            self.feature_layers.append(Conv2dHiddenLayer(256, 256, p_baseline, weight_fa_learning, False, weight_r_learning, self.feature_layers[1].out_size, device, kernel_size=3))
+            self.feature_layers.append(Conv2dHiddenLayer(input_channels, 64, p_baseline, weight_fa_learning, False, False, 32, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(64, 256, p_baseline, weight_fa_learning, False, False, self.feature_layers[0].out_size, device, kernel_size=5, stride=2))
+            self.feature_layers.append(Conv2dHiddenLayer(256, 256, p_baseline, weight_fa_learning, False, False, self.feature_layers[1].out_size, device, kernel_size=3))
         self.feature_layers.append(Flatten())
 
         self.classification_layers = []
@@ -109,8 +109,8 @@ class CIFAR10ConvNet(nn.Module):
 
                 init.normal_(m.weight_fa, 0, self.weight_fa_std)
 
-                if self.recurrent_input and (isinstance(m, HiddenLayer) or isinstance(m, Conv2dHiddenLayer)):
-                    init.normal_(m.weight_r, 0, self.weight_r_std)
+                if self.recurrent_input and isinstance(m, HiddenLayer):
+                    init.uniform_(m.weight_r, -self.weight_r_range, self.weight_r_range)
 
 class CIFAR10ConvNetNP(nn.Module):
     def __init__(self, input_channels, xi_mean, xi_std, device):
@@ -292,11 +292,11 @@ class CIFAR10ConvNetBP(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 class MNISTNet(nn.Module):
-    def __init__(self, input_channels, p_baseline, weight_fa_std, weight_r_std, weight_fa_learning, recurrent_input, weight_r_learning, n_hidden_layers, device):
+    def __init__(self, input_channels, p_baseline, weight_fa_std, weight_r_range, weight_fa_learning, recurrent_input, weight_r_learning, n_hidden_layers, device):
         super(MNISTNet, self).__init__()
 
         self.weight_fa_std      = weight_fa_std
-        self.weight_r_std       = weight_r_std
+        self.weight_r_range     = weight_r_range
         self.weight_fa_learning = weight_fa_learning
         self.recurrent_input    = recurrent_input
         self.weight_r_learning  = weight_r_learning
@@ -367,7 +367,7 @@ class MNISTNet(nn.Module):
                 init.normal_(m.weight_fa, 0, self.weight_fa_std)
 
                 if self.recurrent_input and isinstance(m, HiddenLayer):
-                    init.normal_(m.weight_r, 0, self.weight_r_std)
+                    init.uniform_(m.weight_r, -self.weight_r_range, self.weight_r_range)
 
 class MNISTNetNP(nn.Module):
     def __init__(self, input_channels, n_hidden_layers, xi_mean, xi_std, device):
@@ -523,11 +523,11 @@ class MNISTNetBP(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 class MNISTConvNet(nn.Module):
-    def __init__(self, input_channels, p_baseline, weight_fa_std, weight_r_std, weight_fa_learning, recurrent_input, weight_r_learning, device):
+    def __init__(self, input_channels, p_baseline, weight_fa_std, weight_r_range, weight_fa_learning, recurrent_input, weight_r_learning, device):
         super(MNISTConvNet, self).__init__()
 
         self.weight_fa_std      = weight_fa_std
-        self.weight_r_std       = weight_r_std
+        self.weight_r_range     = weight_r_range
         self.weight_fa_learning = weight_fa_learning
         self.recurrent_input    = recurrent_input
         self.weight_r_learning  = weight_r_learning
@@ -608,8 +608,8 @@ class MNISTConvNet(nn.Module):
 
                 init.normal_(m.weight_fa, 0, self.weight_fa_std)
 
-                if self.recurrent_input and (isinstance(m, HiddenLayer) or isinstance(m, Conv2dHiddenLayer)):
-                    init.normal_(m.weight_r, 0, self.weight_r_std)
+                if self.recurrent_input and isinstance(m, HiddenLayer):
+                    init.uniform_(m.weight_r, -self.weight_r_range, self.weight_r_range)
 
 class MNISTConvNetNP(nn.Module):
     def __init__(self, input_channels, xi_mean, xi_std, device):
