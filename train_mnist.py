@@ -111,11 +111,13 @@ else:
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 transform_train = torchvision.transforms.Compose([
-    torchvision.transforms.ToTensor()
+    torchvision.transforms.ToTensor(),
+    torchvision.transforms.Normalize([0.131], [0.308])
 ])
 
 transform_test = torchvision.transforms.Compose([
-    torchvision.transforms.ToTensor()
+    torchvision.transforms.ToTensor(),
+    torchvision.transforms.Normalize([0.131], [0.308])
 ])
 
 train_set = torchvision.datasets.MNIST(root='./Data', train=True, download=True, transform=transform_train)
@@ -148,17 +150,18 @@ if use_backprop:
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=output_lr, momentum=momentum, weight_decay=weight_decay)
 
-def train(epoch):
+def train(epoch, calc_avg_delta_angles=False):
     net.train()
 
     train_loss = 0
     correct    = 0
     total      = 0
-
-    if conv_net:
-        avg_delta_angles = [0 for i in range(4)]
-    else:
-        avg_delta_angles = [0 for i in range(n_hidden_layers)]
+    
+    if calc_avg_delta_angles:
+        if conv_net:
+            avg_delta_angles = [0 for i in range(4)]
+        else:
+            avg_delta_angles = [0 for i in range(n_hidden_layers)]
 
     progress_bar = tqdm(train_loader)
     for batch_idx, (inputs, targets) in enumerate(progress_bar):
@@ -172,7 +175,7 @@ def train(epoch):
         outputs = net(inputs)
 
         if sequential_pertubation:
-            net.forward_backward_weight_update_perturb(inputs, t, lr=lr, momentum=momentum, weight_decay=weight_decay, perturb_units=perturb_units, batch_size=inputs.shape[0])
+            net.forward_backward_weight_update_perturb(inputs, t, lr=lr, momentum=momentum, weight_decay=weight_decay, perturb_units=perturb_units)
 
             loss = net.loss(outputs, t)
 
@@ -187,31 +190,32 @@ def train(epoch):
                 loss.backward()
                 optimizer.step()
 
-                train_loss  += loss.item()
+                train_loss += loss.item()
             else:
                 loss = net.loss(outputs, t)
 
                 net.backward(t)
 
                 if not use_node_pertubation:
-                    delta_angles = net.delta_angles()
-                    for i in range(len(delta_angles)):
-                        avg_delta_angles[i] += delta_angles[i]
+                    if calc_avg_delta_angles:
+                        delta_angles = net.delta_angles()
+                        for i in range(len(delta_angles)):
+                            avg_delta_angles[i] += delta_angles[i]
 
                     if epoch == 0 and batch_idx == 0 and not use_node_pertubation:
                         weight_angles = net.weight_angles()
-                        delta_angles = net.delta_angles()
+                        delta_angles  = net.delta_angles()
 
                         for i in range(len(weight_angles)):
                             writer.add_scalar('weight_angle/{}'.format(i), weight_angles[i], 0)
                             writer.add_scalar('delta_angle/{}'.format(i), delta_angles[i], 0)
 
                 if use_node_pertubation:
-                    net.update_weights(lr=lr, momentum=momentum, weight_decay=weight_decay, batch_size=inputs.shape[0])
+                    net.update_weights(lr=lr, momentum=momentum, weight_decay=weight_decay)
                 else:
-                    net.update_weights(lr=lr, momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr, batch_size=inputs.shape[0])
+                    net.update_weights(lr=lr, momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr)
 
-                train_loss  += loss
+                train_loss += loss
 
         _, predicted = outputs.max(1)
         total       += targets.size(0)
@@ -219,11 +223,14 @@ def train(epoch):
 
         progress_bar.set_description("Train Loss: {:.3f} | Acc: {:.3f}% ({:d}/{:d})".format(train_loss/(batch_idx+1), 100*correct/total, correct, total))
 
-    if not use_backprop:
+    if calc_avg_delta_angles and not use_backprop:
         for i in range(len(avg_delta_angles)):
             avg_delta_angles[i] /= len(train_loader)
-
-    return 100*(1 - correct/total), train_loss/(batch_idx+1), avg_delta_angles
+    
+    if calc_avg_delta_angles:
+        return 100*(1 - correct/total), train_loss/(batch_idx+1), avg_delta_angles
+    else:
+        return 100*(1 - correct/total), train_loss/(batch_idx+1)
 
 def test():
     net.eval()
@@ -246,12 +253,12 @@ def test():
             if not use_backprop:
                 loss = net.loss(outputs, t)
 
-                test_loss   += loss
+                test_loss += loss
 
             if use_backprop:
                 loss = criterion(outputs, t)
 
-                test_loss  += loss.item()
+                test_loss += loss.item()
 
             _, predicted = outputs.max(1)
             total       += targets.size(0)
@@ -315,7 +322,7 @@ if directory is not None:
 for epoch in range(n_epochs):
     print("\nEpoch {}.".format(epoch+1))
 
-    train_error, train_loss, delta_angles = train(epoch)
+    train_error, train_loss = train(epoch)
     test_error, test_loss   = test()
 
     if directory is not None:
@@ -326,7 +333,7 @@ for epoch in range(n_epochs):
 
         if not use_backprop and not use_node_pertubation:
             weight_angles = net.weight_angles()
-            delta_angles = net.delta_angles()
+            delta_angles  = net.delta_angles()
 
             for i in range(len(weight_angles)):
                 writer.add_scalar('weight_angle/{}'.format(i), weight_angles[i], epoch+1)

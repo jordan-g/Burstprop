@@ -64,15 +64,15 @@ class CIFAR10ConvNet(nn.Module):
                 self.feature_layers[i].backward_pre(feedback)
             feedback, feedback_t, feedback_bp = self.feature_layers[i].backward(feedback, feedback_t, feedback_bp)
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, recurrent_lr=None, batch_size=1):
+    def update_weights(self, lr, momentum=0, weight_decay=0, recurrent_lr=None):
         for i in range(len(self.classification_layers)):
             if i < len(self.classification_layers)-1:
-                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr)
             else:
-                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay)
 
         for i in range(len(self.feature_layers)-1):
-            self.feature_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr, batch_size=batch_size)
+            self.feature_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr)
 
     def loss(self, output, target):
         return F.mse_loss(output, target)
@@ -147,7 +147,7 @@ class CIFAR10ConvNetNP(nn.Module):
         for i in range(len(self.classification_layers)):
             x = self.classification_layers[i].forward_perturb(x)
 
-    def forward_backward_weight_update_perturb(self, x, target, lr, momentum=0, weight_decay=0, perturb_units=False, batch_size=1):
+    def forward_backward_weight_update_perturb(self, x, target, lr, momentum=0, weight_decay=0, perturb_units=False):
         if perturb_units:
             if self.l < len(self.feature_layers) - 1 + len(self.classification_layers):
                 if self.l < len(self.feature_layers) - 1:
@@ -182,7 +182,7 @@ class CIFAR10ConvNetNP(nn.Module):
                     for i in range(len(self.feature_layers)-2, -1, -1):
                         self.feature_layers[i].backward(E, E_perturb)
 
-                    self.update_weights(lr, momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                    self.update_weights(lr, momentum=momentum, weight_decay=weight_decay)
 
                     self.u += 1
                 else:
@@ -224,7 +224,7 @@ class CIFAR10ConvNetNP(nn.Module):
                 for i in range(len(self.feature_layers)-2, -1, -1):
                     self.feature_layers[i].backward(E, E_perturb)
 
-                self.update_weights(lr, momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.update_weights(lr, momentum=momentum, weight_decay=weight_decay)
 
                 self.l += 1
 
@@ -238,15 +238,15 @@ class CIFAR10ConvNetNP(nn.Module):
         for i in range(len(self.feature_layers)-2, -1, -1):
             self.feature_layers[i].backward(E, E_perturb)
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, batch_size=1):
+    def update_weights(self, lr, momentum=0, weight_decay=0):
         for i in range(len(self.classification_layers)):
             if i < len(self.classification_layers)-1:
-                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay)
             else:
-                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay)
 
         for i in range(len(self.feature_layers)-1):
-            self.feature_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+            self.feature_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay)
 
     def loss(self, output, target):
         return F.mse_loss(output, target)
@@ -331,12 +331,12 @@ class MNISTNet(nn.Module):
                 self.classification_layers[i].backward_pre(feedback)
             feedback, feedback_t, feedback_bp = self.classification_layers[i].backward(feedback, feedback_t, feedback_bp)
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, recurrent_lr=None, batch_size=1):
+    def update_weights(self, lr, momentum=0, weight_decay=0, recurrent_lr=None):
         for i in range(len(self.classification_layers)):
             if i < len(self.classification_layers)-1:
-                self.classification_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr)
             else:
-                self.classification_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay)
 
     def loss(self, output, target):
         return F.mse_loss(output, target)
@@ -361,7 +361,7 @@ class MNISTNet(nn.Module):
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, HiddenLayer) or isinstance(m, OutputLayer):
-                nn.init.xavier_normal_(m.weight, gain=3.6)
+                nn.init.xavier_normal_(m.weight)
                 nn.init.constant_(m.bias, 0)
 
                 init.normal_(m.weight_fa, 0, self.weight_fa_std)
@@ -406,7 +406,7 @@ class MNISTNetNP(nn.Module):
         for i in range(len(self.classification_layers)):
             x = self.classification_layers[i].forward_perturb(x)
 
-    def forward_backward_weight_update_perturb(self, x, target, lr, momentum=0, weight_decay=0, perturb_units=False, batch_size=1):
+    def forward_backward_weight_update_perturb(self, x, target, lr, momentum=0, weight_decay=0, perturb_units=False):
         if perturb_units:
             if self.l < len(self.classification_layers):
                 selected_layer = self.classification_layers[self.l]
@@ -428,7 +428,7 @@ class MNISTNetNP(nn.Module):
                     for i in range(len(self.classification_layers)-2, -1, -1):
                         self.classification_layers[i].backward(E, E_perturb)
 
-                    self.update_weights(lr, momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                    self.update_weights(lr, momentum=momentum, weight_decay=weight_decay)
 
                     self.u += 1
                 else:
@@ -458,7 +458,7 @@ class MNISTNetNP(nn.Module):
                 for i in range(len(self.classification_layers)-2, -1, -1):
                     self.classification_layers[i].backward(E, E_perturb)
 
-                self.update_weights(lr, momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.update_weights(lr, momentum=momentum, weight_decay=weight_decay)
 
                 self.l += 1
 
@@ -469,12 +469,12 @@ class MNISTNetNP(nn.Module):
         for i in range(len(self.classification_layers)-2, -1, -1):
             self.classification_layers[i].backward(E, E_perturb)
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, batch_size=1):
+    def update_weights(self, lr, momentum=0, weight_decay=0):
         for i in range(len(self.classification_layers)):
             if i < len(self.classification_layers)-1:
-                self.classification_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay)
             else:
-                self.classification_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay)
 
     def loss(self, output, target):
         return F.mse_loss(output, target)
@@ -534,8 +534,8 @@ class MNISTConvNet(nn.Module):
 
         self.feature_layers = []
 
-        self.feature_layers.append(Conv2dHiddenLayer(input_channels, 8, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, 28, device, kernel_size=4, stride=2))
-        self.feature_layers.append(Conv2dHiddenLayer(8, 16, p_baseline, weight_fa_learning, recurrent_input, weight_r_learning, self.feature_layers[0].out_size, device, kernel_size=3, stride=2))
+        self.feature_layers.append(Conv2dHiddenLayer(input_channels, 8, p_baseline, weight_fa_learning, False, False, 28, device, kernel_size=4, stride=2))
+        self.feature_layers.append(Conv2dHiddenLayer(8, 16, p_baseline, weight_fa_learning, False, False, self.feature_layers[0].out_size, device, kernel_size=3, stride=2))
         self.feature_layers.append(Flatten())
 
         self.classification_layers = []
@@ -563,15 +563,15 @@ class MNISTConvNet(nn.Module):
                 self.feature_layers[i].backward_pre(feedback)
             feedback, feedback_t, feedback_bp = self.feature_layers[i].backward(feedback, feedback_t, feedback_bp)
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, recurrent_lr=None, batch_size=1):
+    def update_weights(self, lr, momentum=0, weight_decay=0, recurrent_lr=None):
         for i in range(len(self.classification_layers)):
             if i < len(self.classification_layers)-1:
-                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr)
             else:
-                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay)
 
         for i in range(len(self.feature_layers)-1):
-            self.feature_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr, batch_size=batch_size)
+            self.feature_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, recurrent_lr=recurrent_lr)
 
     def loss(self, output, target):
         return F.mse_loss(output, target)
@@ -603,7 +603,7 @@ class MNISTConvNet(nn.Module):
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, Conv2dHiddenLayer) or isinstance(m, HiddenLayer) or isinstance(m, OutputLayer):
-                nn.init.xavier_normal_(m.weight, gain=3.6)
+                nn.init.xavier_normal_(m.weight)
                 nn.init.constant_(m.bias, 0)
 
                 init.normal_(m.weight_fa, 0, self.weight_fa_std)
@@ -646,7 +646,7 @@ class MNISTConvNetNP(nn.Module):
         for i in range(len(self.classification_layers)):
             x = self.classification_layers[i].forward_perturb(x)
 
-    def forward_backward_weight_update_perturb(self, x, target, lr, momentum=0, weight_decay=0, perturb_units=False, batch_size=1):
+    def forward_backward_weight_update_perturb(self, x, target, lr, momentum=0, weight_decay=0, perturb_units=False):
         if perturb_units:
             if self.l < len(self.feature_layers) - 1 + len(self.classification_layers):
                 if self.l < len(self.feature_layers) - 1:
@@ -681,7 +681,7 @@ class MNISTConvNetNP(nn.Module):
                     for i in range(len(self.feature_layers)-2, -1, -1):
                         self.feature_layers[i].backward(E, E_perturb)
 
-                    self.update_weights(lr, momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                    self.update_weights(lr, momentum=momentum, weight_decay=weight_decay)
 
                     self.u += 1
                 else:
@@ -723,7 +723,7 @@ class MNISTConvNetNP(nn.Module):
                 for i in range(len(self.feature_layers)-2, -1, -1):
                     self.feature_layers[i].backward(E, E_perturb)
 
-                self.update_weights(lr, momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.update_weights(lr, momentum=momentum, weight_decay=weight_decay)
 
                 self.l += 1
 
@@ -737,15 +737,15 @@ class MNISTConvNetNP(nn.Module):
         for i in range(len(self.feature_layers)-2, -1, -1):
             self.feature_layers[i].backward(E, E_perturb)
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, batch_size=1):
+    def update_weights(self, lr, momentum=0, weight_decay=0):
         for i in range(len(self.classification_layers)):
             if i < len(self.classification_layers)-1:
-                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay)
             else:
-                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+                self.classification_layers[i].update_weights(lr=lr[len(self.feature_layers)-1+i], momentum=momentum, weight_decay=weight_decay)
 
         for i in range(len(self.feature_layers)-1):
-            self.feature_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay, batch_size=batch_size)
+            self.feature_layers[i].update_weights(lr=lr[i], momentum=momentum, weight_decay=weight_decay)
 
     def loss(self, output, target):
         return F.mse_loss(output, target)

@@ -68,20 +68,19 @@ class OutputLayer(nn.Module):
         self.grad_bias   = torch.sum(self.delta, dim=0)
 
         if self.weight_fa_learning:
-            delta = -(self.b_t - self.b)
-            self.grad_weight_fa = delta.transpose(0, 1).mm(self.input)
+            self.grad_weight_fa = self.delta.transpose(0, 1).mm(self.input)
 
         return (self.b).mm(self.weight_fa), (self.b_t).mm(self.weight_fa), self.delta_bp.mm(self.weight)
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, batch_size=1):
-        self.delta_weight = -lr*self.grad_weight/batch_size + momentum*self.delta_weight
-        self.delta_bias   = -lr*self.grad_bias/batch_size + momentum*self.delta_bias
+    def update_weights(self, lr, momentum=0, weight_decay=0):
+        self.delta_weight = -lr*self.grad_weight + momentum*self.delta_weight
+        self.delta_bias   = -lr*self.grad_bias + momentum*self.delta_bias
 
         self.weight += self.delta_weight - weight_decay*self.weight
         self.bias   += self.delta_bias
 
         if self.weight_fa_learning:
-            self.delta_weight_fa = -lr*self.grad_weight_fa/batch_size + momentum*self.delta_weight_fa
+            self.delta_weight_fa = -lr*self.grad_weight_fa + momentum*self.delta_weight_fa
 
             self.weight_fa += self.delta_weight_fa - weight_decay*self.weight_fa
 
@@ -144,23 +143,22 @@ class HiddenLayer(nn.Module):
         self.grad_bias   = torch.sum(self.delta, dim=0)
 
         if self.weight_fa_learning:
-            delta               = -(self.b_t - self.b)
-            self.grad_weight_fa = delta.transpose(0, 1).mm(self.input)
+            self.grad_weight_fa = self.delta.transpose(0, 1).mm(self.input)
             
         if self.recurrent_input and self.weight_r_learning:
             self.grad_weight_r = -self.u.transpose(0, 1).mm(self.b_pre)
 
         return (self.b).mm(self.weight_fa), (self.b_t).mm(self.weight_fa), self.delta_bp.mm(self.weight)
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, recurrent_lr=None, batch_size=1):
-        self.delta_weight = -lr*self.grad_weight/batch_size + momentum*self.delta_weight
-        self.delta_bias   = -lr*self.grad_bias/batch_size + momentum*self.delta_bias
+    def update_weights(self, lr, momentum=0, weight_decay=0, recurrent_lr=None):
+        self.delta_weight = -lr*self.grad_weight + momentum*self.delta_weight
+        self.delta_bias   = -lr*self.grad_bias + momentum*self.delta_bias
 
         self.weight += self.delta_weight - weight_decay*self.weight
         self.bias   += self.delta_bias
 
         if self.weight_fa_learning:
-            self.delta_weight_fa = -lr*self.grad_weight_fa/batch_size + momentum*self.delta_weight_fa
+            self.delta_weight_fa = -lr*self.grad_weight_fa + momentum*self.delta_weight_fa
 
             self.weight_fa += self.delta_weight_fa - weight_decay*self.weight_fa
         
@@ -337,15 +335,15 @@ class Conv2dHiddenLayer(_ConvNdFA):
         else:
             return nn.grad.conv2d_input(self.input.shape, self.weight_fa, self.b, self.stride, self.padding, self.dilation, self.groups), nn.grad.conv2d_input(self.input.shape, self.weight_fa, self.b_t, self.stride, self.padding, self.dilation, self.groups), nn.grad.conv2d_input(self.input.shape, self.weight, self.delta_bp, self.stride, self.padding, self.dilation, self.groups)
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, recurrent_lr=None, batch_size=1):
-        self.delta_weight = -lr*self.grad_weight/batch_size + momentum*self.delta_weight
-        self.delta_bias   = -lr*self.grad_bias/batch_size + momentum*self.delta_bias
+    def update_weights(self, lr, momentum=0, weight_decay=0, recurrent_lr=None):
+        self.delta_weight = -lr*self.grad_weight + momentum*self.delta_weight
+        self.delta_bias   = -lr*self.grad_bias + momentum*self.delta_bias
 
         self.weight += self.delta_weight - weight_decay*self.weight
         self.bias   += self.delta_bias
 
         if self.weight_fa_learning:
-            self.delta_weight_fa = -lr*self.grad_weight_fa/batch_size + momentum*self.delta_weight_fa
+            self.delta_weight_fa = -lr*self.grad_weight_fa + momentum*self.delta_weight_fa
 
             self.weight_fa += self.delta_weight_fa - weight_decay*self.weight_fa
         
@@ -405,9 +403,9 @@ class OutputLayerNP(nn.Module):
 
         return E, E_perturb
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, batch_size=1):
-        self.delta_weight = -lr*self.grad_weight/batch_size + momentum*self.delta_weight
-        self.delta_bias   = -lr*self.grad_bias/batch_size + momentum*self.delta_bias
+    def update_weights(self, lr, momentum=0, weight_decay=0):
+        self.delta_weight = -lr*self.grad_weight + momentum*self.delta_weight
+        self.delta_bias   = -lr*self.grad_bias + momentum*self.delta_bias
 
         self.weight += self.delta_weight - weight_decay*self.weight
         self.bias   += self.delta_bias
@@ -464,9 +462,9 @@ class HiddenLayerNP(nn.Module):
         self.grad_weight = self.delta.transpose(0, 1).mm(self.input)
         self.grad_bias   = torch.sum(self.delta, dim=0)
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, batch_size=1):
-        self.delta_weight = -lr*self.grad_weight/batch_size + momentum*self.delta_weight
-        self.delta_bias   = -lr*self.grad_bias/batch_size + momentum*self.delta_bias
+    def update_weights(self, lr, momentum=0, weight_decay=0):
+        self.delta_weight = -lr*self.grad_weight + momentum*self.delta_weight
+        self.delta_bias   = -lr*self.grad_bias + momentum*self.delta_bias
 
         self.weight += self.delta_weight - weight_decay*self.weight
         self.bias   += self.delta_bias
@@ -610,9 +608,9 @@ class Conv2dHiddenLayerNP(_ConvNd):
         
         self.grad_bias = torch.sum(self.delta, dim=[0, 2, 3])
 
-    def update_weights(self, lr, momentum=0, weight_decay=0, batch_size=1):
-        self.delta_weight = -lr*self.grad_weight/batch_size + momentum*self.delta_weight
-        self.delta_bias   = -lr*self.grad_bias/batch_size + momentum*self.delta_bias
+    def update_weights(self, lr, momentum=0, weight_decay=0):
+        self.delta_weight = -lr*self.grad_weight + momentum*self.delta_weight
+        self.delta_bias   = -lr*self.grad_bias + momentum*self.delta_bias
 
         self.weight += self.delta_weight - weight_decay*self.weight
         self.bias   += self.delta_bias
