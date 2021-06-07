@@ -52,7 +52,7 @@ parser.add_argument("-p_baseline", type=float, help="Output layer baseline burst
 parser.add_argument('-use_backprop', default=False, help="Whether to train using backprop", type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument('-weight_fa_learning', default=False, help="Whether to update feedback weights", type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument('-recurrent_input', default=True, help="Whether to use recurrent input", type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument("-weight_r_std", help="Range of initial recurrent weights", type=float, default=0.01)
+parser.add_argument("-weight_r_range", help="Range of initial recurrent weights", type=float, default=0.01)
 parser.add_argument('-weight_r_learning', default=True, help="Whether to update recurrent weights", type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument("-recurrent_lr", help="Learning rate for recurrent weights", type=float, default=0.0001)
 parser.add_argument('-use_node_pertubation', default=False, help="Whether to use node pertubation", type=lambda x: (str(x).lower() == 'true'))
@@ -79,7 +79,7 @@ p_baseline             = args.p_baseline
 use_backprop           = args.use_backprop
 weight_fa_learning     = args.weight_fa_learning
 recurrent_input        = args.recurrent_input
-weight_r_std           = args.weight_r_std
+weight_r_range         = args.weight_r_range
 weight_r_learning      = args.weight_r_learning
 recurrent_lr           = args.recurrent_lr
 use_node_pertubation   = args.use_node_pertubation
@@ -142,9 +142,9 @@ elif use_backprop:
         net = MNISTNetBP(input_channels=1, n_hidden_layers=n_hidden_layers).to(device)
 else:
     if conv_net:
-        net = MNISTConvNet(input_channels=1, p_baseline=p_baseline, weight_fa_std=weight_fa_std, weight_r_std=weight_r_std, weight_fa_learning=weight_fa_learning, recurrent_input=recurrent_input, weight_r_learning=weight_r_learning, device=device).to(device)
+        net = MNISTConvNet(input_channels=1, p_baseline=p_baseline, weight_fa_std=weight_fa_std, weight_r_range=weight_r_range, weight_fa_learning=weight_fa_learning, recurrent_input=recurrent_input, weight_r_learning=weight_r_learning, device=device).to(device)
     else:
-        net = MNISTNet(input_channels=1, p_baseline=p_baseline, weight_fa_std=weight_fa_std, weight_r_std=weight_r_std, weight_fa_learning=weight_fa_learning, recurrent_input=recurrent_input, weight_r_learning=weight_r_learning, n_hidden_layers=n_hidden_layers, device=device).to(device)
+        net = MNISTNet(input_channels=1, p_baseline=p_baseline, weight_fa_std=weight_fa_std, weight_r_range=weight_r_range, weight_fa_learning=weight_fa_learning, recurrent_input=recurrent_input, weight_r_learning=weight_r_learning, n_hidden_layers=n_hidden_layers, device=device).to(device)
 
 if use_backprop:
     criterion = torch.nn.MSELoss()
@@ -290,7 +290,7 @@ if directory is not None:
         f.write("Using backprop: {}\n".format(use_backprop))
         f.write("Feedback weight learning: {}\n".format(weight_fa_learning))
         f.write("Recurrent input: {}\n".format(recurrent_input))
-        f.write("Recurrent weight initialization standard deviation: {}\n".format(weight_r_std))
+        f.write("Recurrent weight initialization standard deviation: {}\n".format(weight_r_range))
         f.write("Recurrent weight learning: {}\n".format(weight_r_learning))
         f.write("Recurrent weight learning rate: {}\n".format(recurrent_lr))
         f.write("Using node pertubation: {}\n".format(use_node_pertubation))
